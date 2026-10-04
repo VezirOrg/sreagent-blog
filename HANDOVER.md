@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**First post approved and set live (`draft: false`); repo going public after a history audit, then Pages.**
+**Live at sreagent.emreguclu.io: repo public, Pages deploying from main; first post published. HTTPS enforcement pending.**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, for https://sreagent.emreguclu.io.
 Hugo + Blowfish (pinned submodule, v3.8.0), Turkish and English. This repo will become public, so everything in it is

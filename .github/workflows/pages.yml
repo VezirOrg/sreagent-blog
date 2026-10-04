@@ -38,10 +38,11 @@ jobs:
         run: scripts/scrub-check.sh content
       - id: pages
         uses: actions/configure-pages@v5
+      # baseURL comes from config/_default/hugo.toml (https). configure-pages reports http:// until HTTPS is enforced.
       - name: Build
         env:
           HUGO_ENVIRONMENT: production
-        run: hugo --gc --minify --baseURL "${{ steps.pages.outputs.base_url }}/"
+        run: hugo --gc --minify
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
