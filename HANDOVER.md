@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**Live at https://sreagent.emreguclu.io with 1 post (SQL MCP part 1, TR+EN). Repo public, Pages on, HTTPS enforced.**
+**Live at https://sreagent.emreguclu.io with 1 post (SQL MCP part 1, TR+EN). Author profile cut to name + title (D21, 2026-10-04).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public, history included: everything committed must pass the scrub rules in
@@ -8,7 +8,7 @@ English. This repository is public, history included: everything committed must 
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D20). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D21). Read it first.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`).
   Live: `sql-mcp-part-1`, "Setting up SQL MCP for Azure SRE Agent", series part 1.
@@ -19,6 +19,14 @@ English. This repository is public, history included: everything committed must 
   The base URL comes from `config/_default/hugo.toml` (D19).
 - `themes/blowfish`: git submodule pinned at v3.8.0. Upgrading the theme means moving the submodule in its own commit.
 - `layouts/shortcodes/site-topics.html`: the series and tags block on the home page.
+
+## Author profile (D21)
+
+The site carries **no personal or career text about Emre** unless he approved that exact text, relayed by his assistant.
+`config/_default/languages.{en,tr}.toml` hold name + headline only ("Azure Cloud Solution Architect" /
+"Azure Bulut Çözüm Mimarı"), no `bio`. The home pages show the headline; post pages show the name only. Rule is also in
+`docs/writing-guide.md` §7 and the Turkish summary. Last session (BIO-1) removed an unapproved headline and bio
+("21 years at Microsoft…"), deployed in run 37221741608, and confirmed the live EN/TR home and post pages are clean.
 
 ## Publishing a post
 
