@@ -1,0 +1,14 @@
+[[main]]
+  name = "Yazılar"
+  pageRef = "posts"
+  weight = 10
+
+[[main]]
+  name = "Seriler"
+  pageRef = "series"
+  weight = 20
+
+[[main]]
+  name = "Etiketler"
+  pageRef = "tags"
+  weight = 30

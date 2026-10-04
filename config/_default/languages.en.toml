@@ -1,0 +1,21 @@
+disabled = false
+locale = "en"
+label = "English"
+weight = 1
+title = "SRE Agent Lab"
+
+[params]
+  displayName = "EN"
+  isoCode = "en"
+  rtl = false
+  dateFormat = "2 January 2006"
+  description = "Hands-on lab notes on Azure SRE Agent, MCP and Data API builder: what we built, what broke, and what we proved."
+
+[params.author]
+  name = "Emre Güçlü"
+  image = "img/author.svg"
+  headline = "Cloud Solution Architect, Azure. I build it in a lab before I recommend it."
+  bio = "21 years at Microsoft: support, Premier Field Engineering, training, now Azure architecture. I deploy, break, fix and write it down."
+  links = [
+    { github = "https://github.com/VezirOrg/sreagent-blog" },
+  ]

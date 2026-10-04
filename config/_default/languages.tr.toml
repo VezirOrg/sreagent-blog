@@ -1,0 +1,21 @@
+disabled = false
+locale = "tr"
+label = "Türkçe"
+weight = 2
+title = "SRE Agent Lab"
+
+[params]
+  displayName = "TR"
+  isoCode = "tr"
+  rtl = false
+  dateFormat = "2 January 2006"
+  description = "Azure SRE Agent, MCP ve Data API builder üzerine uygulamalı lab notları: ne kurduk, ne kırıldı, neyi kanıtladık."
+
+[params.author]
+  name = "Emre Güçlü"
+  image = "img/author.svg"
+  headline = "Azure Bulut Çözüm Mimarı. Önermeden önce lab'de kurarım."
+  bio = "Microsoft'ta 21 yıl: destek, Premier Field Engineering, eğitim, şimdi Azure mimarisi. Kurar, bozar, düzeltir ve yazarım."
+  links = [
+    { github = "https://github.com/VezirOrg/sreagent-blog" },
+  ]

@@ -1,0 +1,20 @@
+{{- /* Lists the site's series and tags as badges. Used on the home page. */ -}}
+{{- $tr := eq .Page.Language.Lang "tr" -}}
+<div class="not-prose mt-8">
+  {{- with site.Taxonomies.series }}
+  <h2 class="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">{{ if $tr }}Seriler{{ else }}Series{{ end }}</h2>
+  <div class="flex flex-wrap gap-2 mb-6">
+    {{- range .ByCount }}
+    <a href="{{ .Page.RelPermalink }}" class="rounded-md border border-primary-400 px-3 py-1 text-sm font-medium text-primary-700 hover:bg-primary-100 dark:text-primary-300 dark:hover:bg-primary-900">{{ .Page.Title }} <span class="opacity-70">· {{ .Count }}</span></a>
+    {{- end }}
+  </div>
+  {{- end }}
+  {{- with site.Taxonomies.tags }}
+  <h2 class="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">{{ if $tr }}Etiketler{{ else }}Tags{{ end }}</h2>
+  <div class="flex flex-wrap gap-2">
+    {{- range .ByCount }}
+    <a href="{{ .Page.RelPermalink }}" class="rounded-full bg-neutral-200 px-3 py-1 text-xs font-medium text-neutral-700 hover:bg-primary-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-primary-800">#{{ .Page.Title }}</a>
+    {{- end }}
+  </div>
+  {{- end }}
+</div>
