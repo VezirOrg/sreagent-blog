@@ -25,8 +25,19 @@ written to be publishable (see `docs/decisions.md` D3–D4 and the scrub rules i
 
 ## Next
 
-1. Once the repo is public: enable Pages (source "GitHub Actions", custom domain `sreagent.emreguclu.io`), run the
-   workflow, then enforce HTTPS once the certificate is issued. Emre does the DNS (CNAME + org domain verification TXT).
+1. Once the repo is public: enable Pages, set the domain, run the workflow, then enforce HTTPS when the certificate is
+   issued. Emre does the DNS (CNAME + org domain verification TXT). Set the domain **before** the first run, or
+   `configure-pages` hands the build the `github.io` base URL.
+
+   ```bash
+   gh api -X POST repos/VezirOrg/sreagent-blog/pages -f build_type=workflow
+   gh api -X PUT  repos/VezirOrg/sreagent-blog/pages -f cname=sreagent.emreguclu.io
+   gh workflow run pages.yml -R VezirOrg/sreagent-blog
+   gh run watch -R VezirOrg/sreagent-blog "$(gh run list -R VezirOrg/sreagent-blog -w pages -L 1 --json databaseId -q '.[0].databaseId')"
+   gh api repos/VezirOrg/sreagent-blog/pages --jq '{status,cname,https_enforced,html_url}'
+   # once the certificate exists (minutes to an hour after DNS resolves):
+   gh api -X PUT repos/VezirOrg/sreagent-blog/pages -F https_enforced=true
+   ```
 
 ## Open questions for Emre (current state holds until he answers, D17)
 
