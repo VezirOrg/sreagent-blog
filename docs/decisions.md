@@ -47,3 +47,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D21 | **The site carries no personal or career text about Emre** unless he has approved that exact text, relayed by his assistant. The author profile is his **name and title only**: "Azure Cloud Solution Architect" (EN), "Azure Bulut Çözüm Mimarı" (TR); no `bio`. | The earlier headline and bio had not been approved and were removed. Rule recorded in [writing-guide.md](writing-guide.md) §7. |
+
+## 2026-10-04 — Who holds a privilege (Emre, SYSADMIN-NETLE)
+
+| # | Decision | Notes |
+|---|---|---|
+| D22 | **Posts always separate who runs a privileged command from what the service identity gets.** In `sql-mcp-part-1` the step 2 and verification headings said "as sysadmin", which read as if the gMSA were sysadmin. They now say a DBA with sysadmin rights runs the commands, and step 2 states that the gMSA is not sysadmin and gets only `##MS_ServerPerformanceStateReader##` (2016–2019: `VIEW SERVER STATE`). | Rule recorded in [writing-guide.md](writing-guide.md) §7. The `IS_SRVROLEMEMBER('sysadmin', …)` checks expecting 0 stay. |

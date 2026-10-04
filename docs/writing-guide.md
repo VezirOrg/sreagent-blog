@@ -146,6 +146,11 @@ The author is Emre Güçlü. Write the way he works: direct, concrete, technical
 Start from the real constraint, show the request path, say what broke and why. Prefer a number to an adjective
 ("DAB starts in 3.5 s with 25 servers", not "DAB starts quickly"). First person plural ("we") for lab work.
 
+**Always say who runs a privileged command vs. what the service identity gets.** A step heading like "(as sysadmin)"
+reads as if the service account were sysadmin. Name the operator ("a DBA with sysadmin rights runs these commands")
+and state separately, in one plain sentence, the exact permission the service identity receives ("the gMSA is not
+sysadmin; it gets only `##MS_ServerPerformanceStateReader##`"). Same for local admin, Owner, Global Admin, etc. (D22)
+
 **No personal or career text about Emre** anywhere on the site (author profile, posts, home page, footer, images):
 no years of experience, employers, roles held, or self-descriptions, unless Emre has approved that exact text,
 relayed by his assistant. The guide copies his voice only. The author profile is name and title only (D21).
@@ -174,3 +179,7 @@ workflow yayımlar. Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin k
 
 **Yazar hakkında metin yok:** Emre'nin onayladığı birebir metin (asistanı iletmişse) dışında sitede Emre hakkında kişisel
 ya da kariyer metni yer almaz. Yazar kutusu yalnız ad ve unvan (D21). Rehber yalnız onun sesini taklit eder.
+
+**Yetkiyi kimin kullandığı açık olmalı:** ayrıcalıklı bir komutu kimin çalıştırdığını (ör. "komutları sysadmin yetkili
+bir DBA çalıştırır") ve servis kimliğinin tam olarak hangi yetkiyi aldığını (ör. "gMSA sysadmin değildir; yalnızca
+`##MS_ServerPerformanceStateReader##` alır") her zaman ayrı ayrı yazın. "(sysadmin olarak)" gibi başlıklar yanlış okunur (D22).

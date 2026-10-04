@@ -10,9 +10,9 @@ showTableOfContents: true
 ---
 
 We wanted Azure SRE Agent to answer "what is the top wait on sql02?" and "how many user sessions are there right now?"
-without ever handing it a SQL prompt. No `sysadmin`, no free-form query, no helper database on the SQL Servers, and no
-public endpoint. This post is how we built that with **Data API builder (DAB) 2.1.5** and its MCP endpoint, and what
-broke along the way.
+without ever handing it a SQL prompt. No `sysadmin` for the agent's identity, no free-form query, no helper database on
+the SQL Servers, and no public endpoint. This post is how we built that with **Data API builder (DAB) 2.1.5** and its
+MCP endpoint, and what broke along the way.
 
 ✅ = proven in our lab · 📄 = documented only (Microsoft Learn or DAB source code), not tested by us.
 
@@ -92,13 +92,16 @@ New-ADServiceAccount -Name gmsa-dab -DNSHostName gmsa-dab.contoso.local `
   -PrincipalsAllowedToRetrieveManagedPassword 'mcp01$'
 ```
 
-### 2. Give the gMSA one login and one role (on each SQL Server, as sysadmin)
+### 2. Give the gMSA one login and the performance role (on each SQL Server; a DBA with sysadmin rights runs these commands)
 
 ```sql
 CREATE LOGIN [CONTOSO\gmsa-dab$] FROM WINDOWS WITH DEFAULT_DATABASE = [master];
 ALTER SERVER ROLE [##MS_ServerPerformanceStateReader##] ADD MEMBER [CONTOSO\gmsa-dab$];
 SELECT IS_SRVROLEMEMBER('sysadmin', N'CONTOSO\gmsa-dab$') AS is_sysadmin;   -- expect 0
 ```
+
+The gMSA is not sysadmin; it gets only the `##MS_ServerPerformanceStateReader##` role (on SQL Server 2016–2019,
+`VIEW SERVER STATE` instead).
 
 `##MS_ServerPerformanceStateReader##` is `VIEW SERVER PERFORMANCE STATE`: performance DMVs, nothing else. No table
 data, no security DMVs, no way to change anything. No database user is created. ✅
@@ -353,7 +356,7 @@ az rest -m PUT --url "https://management.azure.com${AGENT}/connectors/dmv?api-ve
 
 ## Verification
 
-**On SQL, as sysadmin**: DAB's session is the gMSA, over Kerberos, and not sysadmin. ✅
+**On SQL (check as a DBA)**: DAB's session is the gMSA, over Kerberos, and not sysadmin. ✅
 
 ```sql
 SELECT s.login_name, c.auth_scheme, IS_SRVROLEMEMBER('sysadmin', s.login_name) AS is_sysadmin
@@ -518,7 +521,8 @@ fewer** (what we tested). Network latency and connection pools with 25 distinct 
 
 1. **DMV views, yes; DMV functions, no.** Without any object on SQL, DAB serves views. Query text, index fragmentation
    and file I/O need a wrapper, and that is a design decision, not a config flag.
-2. **A gMSA plus `##MS_ServerPerformanceStateReader##` is enough.** One login, Kerberos, no database user, not sysadmin.
+2. **A gMSA plus `##MS_ServerPerformanceStateReader##` is enough.** One login, Kerberos, no database user,
+   the gMSA is not sysadmin.
 3. **Managed identity end to end, no secret anywhere.** The agent's MI gets the token, the app role gates it, DAB
    validates it. A static bearer token also works, and expires in a day.
 4. **One unreachable server at startup takes every server down, and nobody restarts it.** Watch the listener from

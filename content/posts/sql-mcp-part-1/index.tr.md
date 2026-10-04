@@ -10,9 +10,9 @@ showTableOfContents: true
 ---
 
 Azure SRE Agent'ın "sql02'de en çok hangi wait var?" ve "şu an kaç kullanıcı oturumu açık?" sorularını, eline hiçbir
-zaman bir SQL komut satırı vermeden cevaplamasını istedik. `sysadmin` yok, serbest sorgu yok, SQL Server'larda yardımcı
-veritabanı yok, genel uç nokta yok. Bu yazı bunu **Data API builder (DAB) 2.1.5** ve onun MCP uç noktasıyla nasıl
-kurduğumuzu ve yolda neyin kırıldığını anlatıyor.
+zaman bir SQL komut satırı vermeden cevaplamasını istedik. Agent'ın kimliğine `sysadmin` yok, serbest sorgu yok, SQL
+Server'larda yardımcı veritabanı yok, genel uç nokta yok. Bu yazı bunu **Data API builder (DAB) 2.1.5** ve onun MCP uç
+noktasıyla nasıl kurduğumuzu ve yolda neyin kırıldığını anlatıyor.
 
 ✅ = lab'imizde kanıtlandı · 📄 = yalnız belgede var (Microsoft Learn ya da DAB kaynak kodu), bizde test edilmedi.
 
@@ -93,13 +93,16 @@ New-ADServiceAccount -Name gmsa-dab -DNSHostName gmsa-dab.contoso.local `
   -PrincipalsAllowedToRetrieveManagedPassword 'mcp01$'
 ```
 
-### 2. gMSA'ya bir login ve bir rol verin (her SQL Server'da, sysadmin olarak)
+### 2. gMSA'ya bir login ve performans rolü verin (her SQL Server'da; komutları sysadmin yetkili bir DBA çalıştırır)
 
 ```sql
 CREATE LOGIN [CONTOSO\gmsa-dab$] FROM WINDOWS WITH DEFAULT_DATABASE = [master];
 ALTER SERVER ROLE [##MS_ServerPerformanceStateReader##] ADD MEMBER [CONTOSO\gmsa-dab$];
 SELECT IS_SRVROLEMEMBER('sysadmin', N'CONTOSO\gmsa-dab$') AS is_sysadmin;   -- expect 0
 ```
+
+gMSA sysadmin değildir; yalnızca `##MS_ServerPerformanceStateReader##` rolünü alır (SQL Server 2016–2019'da bunun
+yerine `VIEW SERVER STATE`).
 
 `##MS_ServerPerformanceStateReader##`, `VIEW SERVER PERFORMANCE STATE` demektir: performans DMV'leri, başka bir şey
 değil. Tablo verisi yok, güvenlik DMV'leri yok, hiçbir şeyi değiştirme imkânı yok. Veritabanı kullanıcısı da
@@ -358,7 +361,7 @@ yalnız yazılabilir alanlardır. ✅
 
 ## Doğrulama
 
-**SQL'de, sysadmin olarak**: DAB'ın oturumu gMSA'dır, Kerberos ile gelir ve sysadmin değildir. ✅
+**SQL'de (bir DBA olarak kontrol edin)**: DAB'ın oturumu gMSA'dır, Kerberos ile gelir, sysadmin değildir. ✅
 
 ```sql
 SELECT s.login_name, c.auth_scheme, IS_SRVROLEMEMBER('sysadmin', s.login_name) AS is_sysadmin
@@ -527,7 +530,7 @@ Yani sunucuları DAB başına sayıya göre değil, **hata alanı ve bakım penc
 1. **DMV view'ları evet; DMV fonksiyonları hayır.** SQL'de hiçbir nesne olmadan DAB view'ları sunar. Sorgu metni, index
    parçalanması ve dosya I/O bir sarmalayıcı ister; bu bir config ayarı değil, bir tasarım kararıdır.
 2. **Bir gMSA ve `##MS_ServerPerformanceStateReader##` yeterli.** Tek login, Kerberos, veritabanı kullanıcısı yok,
-   sysadmin değil.
+   gMSA sysadmin değil.
 3. **Uçtan uca managed identity, hiçbir yerde sır yok.** Token'ı agent'ın MI'ı alır, uygulama rolü kapıyı tutar, DAB
    doğrular. Statik bir bearer token da çalışır ve bir günde süresi dolar.
 4. **Açılışta erişilemeyen tek sunucu bütün sunucuları düşürür ve kimse yeniden başlatmaz.** Dinleyiciyi dışarıdan izleyin;
