@@ -41,3 +41,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | D18 | The repository is **public** and **GitHub Pages** is on: source "GitHub Actions", custom domain `sreagent.emreguclu.io` (domain verified at org level). Every push to `main` builds and deploys. | HTTPS enforcement is switched on separately, after Emre confirms DNS. |
 | D19 | The build takes its base URL from `config/_default/hugo.toml` (`https://sreagent.emreguclu.io/`), not from `configure-pages`. | `configure-pages` reports `http://` until HTTPS is enforced, which put `http://` into canonical and social links on the first deploy. |
 | D20 | **HTTPS is enforced** on Pages; `http://` redirects (301) to `https://sreagent.emreguclu.io/`. | Switched on 2026-10-04 evening, after the certificate was issued. |
+
+## 2026-10-04 — Author profile (Emre, BIO-1)
+
+| # | Decision | Notes |
+|---|---|---|
+| D21 | **The site carries no personal or career text about Emre** unless he has approved that exact text, relayed by his assistant. The author profile is his **name and title only**: "Azure Cloud Solution Architect" (EN), "Azure Bulut Çözüm Mimarı" (TR); no `bio`. | The earlier headline and bio had not been approved and were removed. Rule recorded in [writing-guide.md](writing-guide.md) §7. |

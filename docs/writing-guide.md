@@ -146,6 +146,10 @@ The author is Emre Güçlü. Write the way he works: direct, concrete, technical
 Start from the real constraint, show the request path, say what broke and why. Prefer a number to an adjective
 ("DAB starts in 3.5 s with 25 servers", not "DAB starts quickly"). First person plural ("we") for lab work.
 
+**No personal or career text about Emre** anywhere on the site (author profile, posts, home page, footer, images):
+no years of experience, employers, roles held, or self-descriptions, unless Emre has approved that exact text,
+relayed by his assistant. The guide copies his voice only. The author profile is name and title only (D21).
+
 ---
 
 ## Türkçe özet
@@ -167,3 +171,6 @@ commit'te değişir.
 
 **Onay:** yazı `draft: true` ile yazılır → özel önizleme → Emre onaylar → iki dilde `draft: false`, commit, push →
 workflow yayımlar. Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
+
+**Yazar hakkında metin yok:** Emre'nin onayladığı birebir metin (asistanı iletmişse) dışında sitede Emre hakkında kişisel
+ya da kariyer metni yer almaz. Yazar kutusu yalnız ad ve unvan (D21). Rehber yalnız onun sesini taklit eder.

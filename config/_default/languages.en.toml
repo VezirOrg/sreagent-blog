@@ -14,8 +14,7 @@ title = "SRE Agent Lab"
 [params.author]
   name = "Emre Güçlü"
   image = "img/author.svg"
-  headline = "Cloud Solution Architect, Azure. I build it in a lab before I recommend it."
-  bio = "21 years at Microsoft: support, Premier Field Engineering, training, now Azure architecture. I deploy, break, fix and write it down."
+  headline = "Azure Cloud Solution Architect"
   links = [
     { github = "https://github.com/VezirOrg/sreagent-blog" },
   ]
