@@ -2,7 +2,7 @@
 title: "Azure SRE Agent için SQL MCP kurulumu"
 description: "Azure SRE Agent'a Data API builder üzerinden SQL Server DMV'lerine salt okunur erişim: gMSA, Kerberos, SQL'de nesne yok, VNet üzerinden managed identity ile connector ve yolda bulduğumuz hata davranışları."
 date: 2026-10-04
-draft: true
+draft: false
 series: ["Azure SRE Agent için SQL MCP"]
 series_order: 1
 tags: ["azure-sre-agent", "mcp", "dab", "sql-server", "entra-id", "gmsa", "kerberos"]

@@ -26,3 +26,10 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | D13 | `removePathAccents = true`: Turkish characters are dropped from URLs (`için` → `icin`). | ASCII URLs are easier to share and to host. |
 | D14 | The real lab-name denylist for the scrub check lives **outside** the repo. | The list itself would identify the lab. |
 | D15 | No content license stated yet. | Emre's call. |
+
+## 2026-10-04 ~20:28 — First post approved (Emre)
+
+| # | Decision | Notes |
+|---|---|---|
+| D16 | **"Setting up SQL MCP for Azure SRE Agent" (TR + EN) is approved** and published (`draft: false`). The repository goes public and GitHub Pages is enabled after a pre-public audit of the full git history. | Making the repo public is done by Emre's assistant, not by this project's session. |
+| D17 | Until Emre decides otherwise: **no license file**, **English at the root and Turkish under `/tr/`**, the **part 2 teaser stays**, the **SVG cover stays**. | D8, D15 and the PNG question remain open. |

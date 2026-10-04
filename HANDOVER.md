@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**First post written (TR+EN, draft) and previewed privately; waiting for Emre's approval. Repo private, Pages off.**
+**First post approved and set live (`draft: false`); repo going public after a history audit, then Pages.**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, for https://sreagent.emreguclu.io.
 Hugo + Blowfish (pinned submodule, v3.8.0), Turkish and English. This repo will become public, so everything in it is
@@ -25,14 +25,11 @@ written to be publishable (see `docs/decisions.md` D3–D4 and the scrub rules i
 
 ## Next
 
-1. Emre reviews the first post. Changes go into the bundle; rebuild the preview to the same artifact.
-2. On approval: `draft: false` in both languages, commit `post: publish sql-mcp-part-1`, push. Then the owner (not
-   this project's session) makes the repo public; Pages is enabled with source "GitHub Actions" and the custom domain
-   set in the repo settings. Emre does the DNS (CNAME + org domain verification TXT).
+1. Once the repo is public: enable Pages (source "GitHub Actions", custom domain `sreagent.emreguclu.io`), run the
+   workflow, then enforce HTTPS once the certificate is issued. Emre does the DNS (CNAME + org domain verification TXT).
 
-## Open questions for Emre
+## Open questions for Emre (current state holds until he answers, D17)
 
-- Approve the first post, or send changes.
 - Content license (none stated yet).
 - English at the root and Turkish under `/tr/`: keep or flip.
 - The post ends with a teaser for part 2 (monitoring this setup): keep or drop.

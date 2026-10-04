@@ -2,7 +2,7 @@
 title: "Setting up SQL MCP for Azure SRE Agent"
 description: "Give Azure SRE Agent read-only access to SQL Server DMVs through Data API builder: a gMSA, Kerberos, no object on SQL, a managed-identity connector over the VNet, and the failure modes we found on the way."
 date: 2026-10-04
-draft: true
+draft: false
 series: ["SQL MCP for Azure SRE Agent"]
 series_order: 1
 tags: ["azure-sre-agent", "mcp", "dab", "sql-server", "entra-id", "gmsa", "kerberos"]
