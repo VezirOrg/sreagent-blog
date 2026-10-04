@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**Live at https://sreagent.emreguclu.io with 1 post (SQL MCP part 1, TR+EN). Author profile cut to name + title (D21, 2026-10-04).**
+**Live at https://sreagent.emreguclu.io with 1 post (SQL MCP part 1, TR+EN). Post now says a DBA runs the sysadmin commands; the gMSA is not sysadmin (D22, 2026-10-04).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public, history included: everything committed must pass the scrub rules in
@@ -8,7 +8,7 @@ English. This repository is public, history included: everything committed must 
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D21). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D22). Read it first.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`).
   Live: `sql-mcp-part-1`, "Setting up SQL MCP for Azure SRE Agent", series part 1.
@@ -25,8 +25,16 @@ English. This repository is public, history included: everything committed must 
 The site carries **no personal or career text about Emre** unless he approved that exact text, relayed by his assistant.
 `config/_default/languages.{en,tr}.toml` hold name + headline only ("Azure Cloud Solution Architect" /
 "Azure Bulut Çözüm Mimarı"), no `bio`. The home pages show the headline; post pages show the name only. Rule is also in
-`docs/writing-guide.md` §7 and the Turkish summary. Last session (BIO-1) removed an unapproved headline and bio
-("21 years at Microsoft…"), deployed in run 37221741608, and confirmed the live EN/TR home and post pages are clean.
+`docs/writing-guide.md` §7 and the Turkish summary.
+
+## Privileges in posts (D22)
+
+Always say **who runs** a privileged command separately from **what the service identity gets** (writing guide §7).
+Last session (SYSADMIN-NETLE, Emre 10-04) fixed `sql-mcp-part-1` TR+EN: step 2 heading now says "a DBA with sysadmin
+rights runs these commands", step 2 states "the gMSA is not sysadmin; it gets only `##MS_ServerPerformanceStateReader##`
+(2016–2019: `VIEW SERVER STATE`)", the verification heading reads "On SQL (check as a DBA)", and the intro and
+"What we learned" say whose `sysadmin` is meant. `IS_SRVROLEMEMBER('sysadmin', …)` checks expecting 0 stay. Commit
+8ec0082, Pages run 37226236208 (success); live EN and TR pages checked with curl, no "as sysadmin"/"sysadmin olarak" left.
 
 ## Publishing a post
 
