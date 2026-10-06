@@ -92,7 +92,8 @@ the scrub denylist in `files/`).
   connection. Nothing else changes. Result: the connectivity test and a plain re-save did not refresh it; re-saving
   with the branch set explicitly re-cloned the latest commit. Follow-up measurement stopped (D35).
 - **L9 · 2026-10-06 · go: D35.** Remove the demo agent's Code Access connection and the stored GitHub credential, then
-  verify that the clone and the credential are gone from the agent's workspace. Result: _pending_.
+  verify that the clone and the credential are gone from the agent's workspace. Result: done (2026-10-06 ~10:00 UTC):
+  no repos, no GitHub credential listed; the workspace clone folder is empty and no credential file remains.
 
 ## Publishing a post
 
