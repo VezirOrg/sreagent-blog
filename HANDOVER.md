@@ -75,6 +75,10 @@ the scrub denylist in `files/`).
 - **L3 · 2026-10-06 · go: D30, D31.** CI identity: a user-assigned managed identity in the demo resource group with a
   GitHub OIDC federated credential (demo repo, `main` branch only) and SRE Agent Administrator on the demo agent only.
   No Entra app, no secret, no other role. Result: _pending_.
+- **L4 · 2026-10-06 · go: D32.** Guardrail layer 1 on the demo agent: a common prompt limiting it to the demo repo (the
+  same text sits at the top of the demo repo's `AGENTS.md`). Result: _pending_.
+- **L5 · 2026-10-06 · go: D32.** Register a GitHub credential on the demo agent (never printed) and connect **only**
+  the demo repo through Code Access. Review mode and low access stay. Result: _pending_.
 
 ## Publishing a post
 
