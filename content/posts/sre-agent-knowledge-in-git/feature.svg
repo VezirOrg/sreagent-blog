@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1e3a"/><stop offset="1" stop-color="#0a5a6a"/>
+    </linearGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#7dd3fc"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="70" y="110" font-family="Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#7dd3fc" letter-spacing="3">AZURE SRE AGENT</text>
+  <text x="70" y="180" font-family="Helvetica, Arial, sans-serif" font-size="64" font-weight="800" fill="#f0f9ff">Knowledge in git</text>
+  <g font-family="Helvetica, Arial, sans-serif" text-anchor="middle">
+    <rect x="70" y="300" width="230" height="130" rx="16" fill="#f97316"/>
+    <text x="185" y="358" font-size="34" font-weight="700" fill="#2a1203">git</text>
+    <text x="185" y="396" font-size="20" fill="#2a1203">docs/runbooks</text>
+    <rect x="420" y="300" width="290" height="130" rx="16" fill="#a78bfa"/>
+    <text x="565" y="358" font-size="30" font-weight="700" fill="#1e1035">GitHub Actions</text>
+    <text x="565" y="396" font-size="20" fill="#1e1035">OIDC · sync on merge</text>
+    <rect x="830" y="230" width="300" height="120" rx="16" fill="#0ea5e9"/>
+    <text x="980" y="285" font-size="30" font-weight="700" fill="#03263b">Knowledge</text>
+    <text x="980" y="320" font-size="20" fill="#03263b">upload · delete · index</text>
+    <rect x="830" y="390" width="300" height="120" rx="16" fill="#14b8a6"/>
+    <text x="980" y="445" font-size="30" font-weight="700" fill="#032b27">Skills</text>
+    <text x="980" y="480" font-size="20" fill="#032b27">weekly procedures</text>
+  </g>
+  <g stroke="#7dd3fc" stroke-width="4" fill="none" marker-end="url(#ar)">
+    <path d="M300 365 L415 365"/>
+    <path d="M710 345 L825 295"/>
+    <path d="M710 385 L825 445"/>
+  </g>
+  <text x="70" y="580" font-family="Helvetica, Arial, sans-serif" font-size="24" fill="#bae6fd">one source · two paths</text>
+</svg>
