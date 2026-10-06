@@ -89,7 +89,10 @@ the scrub denylist in `files/`).
   procedure as one skill on the demo agent, with different canaries, to see which one the agent uses. Result: done.
 - **L8 · 2026-10-06 · go: D30, D31 (within L5).** The Code Access clone had not refreshed 70 minutes after several pushes.
   Try to refresh it: first the documented repo connectivity test, then, if needed, re-save the same single repo
-  connection. Nothing else changes. Result: _pending_.
+  connection. Nothing else changes. Result: the connectivity test and a plain re-save did not refresh it; re-saving
+  with the branch set explicitly re-cloned the latest commit. Follow-up measurement stopped (D35).
+- **L9 · 2026-10-06 · go: D35.** Remove the demo agent's Code Access connection and the stored GitHub credential, then
+  verify that the clone and the credential are gone from the agent's workspace. Result: _pending_.
 
 ## Publishing a post
 
