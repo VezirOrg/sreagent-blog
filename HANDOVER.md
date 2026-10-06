@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**Live at https://sreagent.emreguclu.io with 1 post (SQL MCP part 1, TR+EN). Post now says a DBA runs the sysadmin commands; the gMSA is not sysadmin (D22, 2026-10-04).**
+**Live with 1 post (SQL MCP part 1, TR+EN). Post 2 (SRE Agent knowledge in git) is planned; a lab demo comes before any draft, and five questions to Emre are open (2026-10-06).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public, history included: everything committed must pass the scrub rules in
@@ -8,7 +8,7 @@ English. This repository is public, history included: everything committed must 
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D22). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D25). Read it first.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`).
   Live: `sql-mcp-part-1`, "Setting up SQL MCP for Azure SRE Agent", series part 1.
@@ -16,7 +16,8 @@ English. This repository is public, history included: everything committed must 
 - `scripts/scrub-check.sh`: scrub gate (GUIDs, private IPs, tokens, secrets, plus a lab-name denylist kept outside the repo).
   The Pages workflow runs it before every build.
 - `.github/workflows/pages.yml`: every push to `main` builds with Hugo 0.167.0 extended and deploys to Pages.
-  The base URL comes from `config/_default/hugo.toml` (D19).
+  The base URL comes from `config/_default/hugo.toml` (D19). Record-only commits (HANDOVER, docs) that must not
+  redeploy carry `[skip ci]` in the message.
 - `themes/blowfish`: git submodule pinned at v3.8.0. Upgrading the theme means moving the submodule in its own commit.
 - `layouts/shortcodes/site-topics.html`: the series and tags block on the home page.
 
@@ -30,11 +31,36 @@ The site carries **no personal or career text about Emre** unless he approved th
 ## Privileges in posts (D22)
 
 Always say **who runs** a privileged command separately from **what the service identity gets** (writing guide §7).
-Last session (SYSADMIN-NETLE, Emre 10-04) fixed `sql-mcp-part-1` TR+EN: step 2 heading now says "a DBA with sysadmin
-rights runs these commands", step 2 states "the gMSA is not sysadmin; it gets only `##MS_ServerPerformanceStateReader##`
-(2016–2019: `VIEW SERVER STATE`)", the verification heading reads "On SQL (check as a DBA)", and the intro and
-"What we learned" say whose `sysadmin` is meant. `IS_SRVROLEMEMBER('sysadmin', …)` checks expecting 0 stay. Commit
-8ec0082, Pages run 37226236208 (success); live EN and TR pages checked with curl, no "as sysadmin"/"sysadmin olarak" left.
+`sql-mcp-part-1` was fixed accordingly on 2026-10-04 (commit 8ec0082).
+
+## Post 2 — SRE Agent knowledge in git (D23–D25)
+
+Topic: keep runbooks in a git repo as the single source; a CI step pushes them into the indexed knowledge base; the
+same repo is connected through Code Access; the repo's root instruction file points to the runbooks; frequent
+procedures become skills.
+
+- **The plan lives outside the repo**, in `files/261006-post2-plan.md` (Drive). It holds the title options, the
+  outline (skeleton only), an evidence table for 13 claims (📄 public doc / ✅ demo / still unproven), the demo plan
+  (§5: tests D-a…D-e, private demo repo, GitHub Actions CI, evidence handling, cost and time) and the questions.
+  Discussion log: `files/tartisma.md`. The internal source (`files/261006-post2-kaynak-…`) never enters the repo.
+- **Rules (D24, D25):** no quotes from the source and no attribution to any team or group; every claim rests on public
+  docs or our own demo. Demo first, draft second. The demo repo is private (VezirOrg); a public companion repo only on
+  Emre's word.
+- **Live-change rule:** every change to a live system (lab, agent, repo connection, document upload, Entra app, role)
+  needs the go of Emre's assistant, and is written into the log below **before** it starts.
+- **Findings so far (public sources only, no lab run):**
+  - `srectl` is not publicly released (Microsoft's own sre-agent repo says so; not on NuGet on 2026-10-06), and
+    `srectl doc upload` is undocumented. Public equivalents: `azmcp sreagent docs memories add` and the data-plane
+    `/api/v1/agentmemory/upload` and `DELETE …/document/{name}`.
+  - Learn contradicts itself: older pages say a connected repo is indexed as knowledge; a newer page moves repos to
+    Code Access. Only demo test D-a settles it.
+  - Injection of `AGENTS.md` into every turn and its ~3,000-character limit are not documented publicly (demo D-c).
+- **Blocked:** checking whether the agent in the running lab resource group is fit for the demo. This Mac has no
+  `az` login and no Azure credentials in `.env`. The read-only checklist is in plan §5.3. The other lab is down.
+
+### Live-change log
+
+None yet. Format: date, approved by, what is about to change, then the result.
 
 ## Publishing a post
 
@@ -51,6 +77,20 @@ rights runs these commands", step 2 states "the gMSA is not sysadmin; it gets on
 Run at most one `hugo server` at a time on this machine, and stop it afterwards. One-off `hugo` builds are enough for checks.
 
 ## Open decisions for Emre
+
+Post 2 (asked 2026-10-06; full options in the plan §6, answer as `P2-x=letter`):
+
+- **P2-2** Say publicly that the Learn docs are outdated? A openly / B with dated evidence, softly / C no / D decide
+  after the demo (recommended: D, leaning B).
+- **P2-5** `srectl`: A Emre provides a build and access, it becomes the main path / B public path only, `srectl` noted
+  as "not yet public" / C not mentioned (recommended: A if possible, else B).
+- **P2-6** Title: T-A "Keep Azure SRE Agent knowledge in git: one source, two paths" (recommended) / T-B / T-C.
+- **P2-7** Demo agent: A a separate clean agent, deleted afterwards (recommended) / B the existing lab agent, only if
+  the §5.3 checklist is clean.
+- **P2-8** Who runs live steps: A Emre or his assistant, guided by the session / B the session gets an Azure identity
+  via `.env`, with a go before each step.
+
+Earlier, site-wide:
 
 The current state holds until he answers (D17):
 
