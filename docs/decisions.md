@@ -61,3 +61,13 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | D23 | **Post 2 topic: keeping Azure SRE Agent knowledge in a git repository** instead of uploading documents one by one: git as the single source, a CI step that pushes the docs into the indexed knowledge base, the same repo connected through Code Access, a pointer in the repo's root instruction file, and frequently used procedures packaged as skills. | The plan, the claim-by-claim evidence table and the open questions are kept outside the repo until a draft exists. |
 | D24 | **No quotes and no attribution.** The post does not quote the internal answer that prompted it and does not attribute the guidance to any team or group. Every claim is stated in our own words and rests on public documentation (📄) or our own demo (✅). | POST2-ALINTI. |
 | D25 | **Demo first, draft second.** The post is drafted only after a lab demo has shown the core claims. The demo uses a **private** repository; a public companion repository only on Emre's word. Every change to a live system (lab, agent, repo connection, document upload) needs the go of Emre's assistant and is logged before it starts. | POST2-DEMO, POST2-SIRA. |
+
+## 2026-10-06 — Post 2 answers (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D26 | **The post does not say the Learn docs are outdated.** It says the public docs are not yet clear on this point, so we settled it by testing in a lab. | P2-2. |
+| D27 | **`srectl` is used** for the CI upload, even though it is not publicly released or official. The session obtains and installs it itself; if it cannot be obtained, the work stops and the session reports what it tried and what Emre needs to provide. | P2-5. The post still names the public alternative for readers who cannot get `srectl`. |
+| D28 | **Title: "Keep Azure SRE Agent knowledge in git: one source, two paths"** (TR: "Azure SRE Agent bilgisini git'te tutmak: tek kaynak, iki yol"). | P2-6, option T-A. |
+| D29 | **The demo runs on a fresh, clean agent in its own new resource group**, created only for the demo and deleted once the results are clear. No existing agent or resource group is touched. | P2-7. Deletion waits for Emre's word, relayed by his assistant. |
+| D30 | **The session runs the live demo steps itself**, with an Azure identity loaded by direnv from outside the repo; secret values are never printed. Emre's go covers the demo plan's live steps (new resource group and agent, a private demo repo, GitHub Actions with OIDC and the SRE Agent Administrator role scoped to the demo agent only, document uploads, tests D-a to D-e) with an active-flow cap of 500 AAU, each step logged before it starts. Anything outside that plan stops and is asked. | P2-8. |
