@@ -83,7 +83,10 @@ the scrub denylist in `files/`).
 - **L6 · 2026-10-06 · go: D30, D31.** Knowledge uploads from CI: the demo repo's workflow runs on push to `main`
   (paths `docs/**`) and by hand, and uploads the runbooks to the demo agent's knowledge base through the public
   data-plane API; deleted files are deleted from the knowledge base. Test changes: one runbook edited, one deleted.
-  Result: _pending_.
+  Result: done. Uploads and push trigger work; the documented single-document delete answered HTTP 500 although the
+  document was gone, so the sync script now verifies deletes against the file list.
+- **L7 · 2026-10-06 · go: D30, D31 (test D-e).** Add one runbook to the demo repo (uploaded by CI) and the same
+  procedure as one skill on the demo agent, with different canaries, to see which one the agent uses. Result: _pending_.
 
 ## Publishing a post
 
