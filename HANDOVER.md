@@ -60,7 +60,14 @@ procedures become skills.
 
 ### Live-change log
 
-None yet. Format: date, approved by, what is about to change, then the result.
+Format: date, approved by, what is about to change, then the result. Lab names are kept out of this file (they are in
+the scrub denylist in `files/`).
+
+- **L1 · 2026-10-06 · go: Emre via his assistant (D30, D31).** Create a new resource group in Sweden Central holding a
+  new SRE Agent built from Microsoft's IaC templates (`minimal` recipe: managed identity, Log Analytics, App Insights),
+  Review mode, low access, monthly limit **500 AAU**. The agent monitors only its own new resource group. The deploying
+  identity gets SRE Agent Administrator on this agent (template default); Emre's account gets the same role on this
+  agent only. Nothing else is touched. Result: _pending_.
 
 ## Publishing a post
 
