@@ -80,6 +80,10 @@ the scrub denylist in `files/`).
   agent on every turn is not documented; the refusal test shows whether layer 1 works.
 - **L5 · 2026-10-06 · go: D32.** Register a GitHub credential on the demo agent (never printed) and connect **only**
   the demo repo through Code Access. Review mode and low access stay. Result: done; one repo, clone ready.
+- **L6 · 2026-10-06 · go: D30, D31.** Knowledge uploads from CI: the demo repo's workflow runs on push to `main`
+  (paths `docs/**`) and by hand, and uploads the runbooks to the demo agent's knowledge base through the public
+  data-plane API; deleted files are deleted from the knowledge base. Test changes: one runbook edited, one deleted.
+  Result: _pending_.
 
 ## Publishing a post
 
