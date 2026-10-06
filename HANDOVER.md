@@ -67,7 +67,14 @@ the scrub denylist in `files/`).
   new SRE Agent built from Microsoft's IaC templates (`minimal` recipe: managed identity, Log Analytics, App Insights),
   Review mode, low access, monthly limit **500 AAU**. The agent monitors only its own new resource group. The deploying
   identity gets SRE Agent Administrator on this agent (template default); Emre's account gets the same role on this
-  agent only. Nothing else is touched. Result: _pending_.
+  agent only. Nothing else is touched. Result: done. The template's deployer role assignment hardcodes a user principal
+  and failed for a service principal; patched locally to `ServicePrincipal` and redeployed. Baseline: 0 knowledge
+  sources, 0 repos, 0 skills, 0 connectors, limit 500 AAU.
+- **L2 · 2026-10-06 · go: D30, D31.** Create the private demo repo under VezirOrg with the canary runbooks,
+  `AGENTS.md` and a knowledge-sync workflow (manual trigger only until D-a is done). Result: _pending_.
+- **L3 · 2026-10-06 · go: D30, D31.** CI identity: a user-assigned managed identity in the demo resource group with a
+  GitHub OIDC federated credential (demo repo, `main` branch only) and SRE Agent Administrator on the demo agent only.
+  No Entra app, no secret, no other role. Result: _pending_.
 
 ## Publishing a post
 
