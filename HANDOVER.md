@@ -94,6 +94,10 @@ the scrub denylist in `files/`).
 - **L9 · 2026-10-06 · go: D35.** Remove the demo agent's Code Access connection and the stored GitHub credential, then
   verify that the clone and the credential are gone from the agent's workspace. Result: done (2026-10-06 ~10:00 UTC):
   no repos, no GitHub credential listed; the workspace clone folder is empty and no credential file remains.
+- **L10 · 2026-10-06 · go: D36 (teardown after publishing).** Remove the demo agent's knowledge documents, skill and
+  guardrail prompt; delete the demo resource group entirely (agent, managed identities and their federated credential,
+  Log Analytics, App Insights); check that no role assignment is left behind; archive the private demo repository (kept,
+  not deleted). Nothing else is touched. Result: _pending_.
 
 ## Publishing a post
 
