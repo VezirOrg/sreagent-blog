@@ -53,3 +53,11 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D22 | **Posts always separate who runs a privileged command from what the service identity gets.** In `sql-mcp-part-1` the step 2 and verification headings said "as sysadmin", which read as if the gMSA were sysadmin. They now say a DBA with sysadmin rights runs the commands, and step 2 states that the gMSA is not sysadmin and gets only `##MS_ServerPerformanceStateReader##` (2016–2019: `VIEW SERVER STATE`). | Rule recorded in [writing-guide.md](writing-guide.md) §7. The `IS_SRVROLEMEMBER('sysadmin', …)` checks expecting 0 stay. |
+
+## 2026-10-06 — Post 2 topic and order of work (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D23 | **Post 2 topic: keeping Azure SRE Agent knowledge in a git repository** instead of uploading documents one by one: git as the single source, a CI step that pushes the docs into the indexed knowledge base, the same repo connected through Code Access, a pointer in the repo's root instruction file, and frequently used procedures packaged as skills. | The plan, the claim-by-claim evidence table and the open questions are kept outside the repo until a draft exists. |
+| D24 | **No quotes and no attribution.** The post does not quote the internal answer that prompted it and does not attribute the guidance to any team or group. Every claim is stated in our own words and rests on public documentation (📄) or our own demo (✅). | POST2-ALINTI. |
+| D25 | **Demo first, draft second.** The post is drafted only after a lab demo has shown the core claims. The demo uses a **private** repository; a public companion repository only on Emre's word. Every change to a live system (lab, agent, repo connection, document upload) needs the go of Emre's assistant and is logged before it starts. | POST2-DEMO, POST2-SIRA. |
