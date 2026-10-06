@@ -71,14 +71,15 @@ the scrub denylist in `files/`).
   and failed for a service principal; patched locally to `ServicePrincipal` and redeployed. Baseline: 0 knowledge
   sources, 0 repos, 0 skills, 0 connectors, limit 500 AAU.
 - **L2 · 2026-10-06 · go: D30, D31.** Create the private demo repo under VezirOrg with the canary runbooks,
-  `AGENTS.md` and a knowledge-sync workflow (manual trigger only until D-a is done). Result: _pending_.
+  `AGENTS.md` and a knowledge-sync workflow (manual trigger only until D-a is done). Result: done, private.
 - **L3 · 2026-10-06 · go: D30, D31.** CI identity: a user-assigned managed identity in the demo resource group with a
   GitHub OIDC federated credential (demo repo, `main` branch only) and SRE Agent Administrator on the demo agent only.
-  No Entra app, no secret, no other role. Result: _pending_.
+  No Entra app, no secret, no other role. Result: done; the identity holds exactly one role assignment.
 - **L4 · 2026-10-06 · go: D32.** Guardrail layer 1 on the demo agent: a common prompt limiting it to the demo repo (the
-  same text sits at the top of the demo repo's `AGENTS.md`). Result: _pending_.
+  same text sits at the top of the demo repo's `AGENTS.md`). Result: done. Whether a common prompt reaches the main
+  agent on every turn is not documented; the refusal test shows whether layer 1 works.
 - **L5 · 2026-10-06 · go: D32.** Register a GitHub credential on the demo agent (never printed) and connect **only**
-  the demo repo through Code Access. Review mode and low access stay. Result: _pending_.
+  the demo repo through Code Access. Review mode and low access stay. Result: done; one repo, clone ready.
 
 ## Publishing a post
 
