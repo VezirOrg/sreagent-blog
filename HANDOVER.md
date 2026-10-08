@@ -1,14 +1,35 @@
 # HANDOVER — sreagent-blog
 
-**Live with 2 posts (TR+EN): SQL MCP part 1, and "Keep Azure SRE Agent knowledge in git" (published 2026-10-06). The Post 2 demo lab is torn down; nothing is running.**
+**Live with 2 posts (TR+EN). Post 3 (restricting SRE Agent's VM commands with managed Run Command) is on hold: API tests passed, agent tests stopped, its lab is still up; waiting on Emre's decision for how the post continues.**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public, history included: everything committed must pass the scrub rules in
 `docs/writing-guide.md` §4. Internal discussion, raw notes and unapproved material stay outside the repo, in `files/`.
 
+## Post 3 — where it stands (2026-10-08)
+
+Topic: limit what SRE Agent can run on a VM with a ladder of controls: (1) an instruction, (2) a custom role with
+managed Run Command (`runCommands/*`) but no `runCommand/action`, (3) an Azure Policy Deny on `runAsUser` and on
+external script/output URIs, (4) a wrapper tool, described only (D38). The lab is its own (D37), built and owned by the
+lab template's session; this project does not tear it down.
+
+- **Done:** plan, role, policy and test script (`files/post3-runcommand/`); the policy aliases checked live; API tests
+  T1–T7 as an admin identity all passed: no `runAsUser`, another user, `scriptUri`, output blob and PATCH to another
+  user are all denied at deploy time; the allowed user runs as a non-admin; `invoke` is outside the role.
+- **Not done:** agent tests A2–A5 and a meaningful password-in-logs count (T8; a read-only baseline exists). They stay
+  unrun unless Emre says otherwise.
+- **Still in place in the lab** (teardown list and full log in `files/post3-runcommand/`, private): the run-as local
+  user on the test VM, the custom role and its assignment, the policy definition and assignment, an SRE Agent
+  Administrator assignment for this project's identity on the lab agent, and leftover managed run commands on the test
+  VM. Leave them until the vezir says; nothing is deleted without its word.
+- **Open for Emre (via his assistant):** how Post 3 continues and who writes it; rotation of the lab's shared
+  credentials.
+- Private record: `files/tartisma.md` (2026-10-08 entries) and `files/post3-runcommand/261008-post3-plan.md` §8–§9.
+  Some of that material must never reach the post or this repo; read the rules at the top of those entries first.
+
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D36). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D38). Read it first.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`). Live:
   - `sql-mcp-part-1`: "Setting up SQL MCP for Azure SRE Agent", series part 1.
@@ -24,7 +45,7 @@ English. This repository is public, history included: everything committed must 
 - `themes/blowfish`: git submodule pinned at v3.8.0. Upgrading the theme means moving the submodule in its own commit.
 - `layouts/shortcodes/site-topics.html`: the series and tags block on the home page.
 
-Outside the repo (`files/`, Drive): `tartisma.md` (discussion log), `261006-post2-plan.md`, `post2-demo/` (results
+Outside the repo (`files/`, Drive): `tartisma.md` (discussion log), `post3-runcommand/` (Post 3 plan, IaC, tests, private log), `261006-post2-plan.md`, `post2-demo/` (results
 table `sonuclar.md`, raw evidence, the `srectl` search), `post2-draft/` (the approved draft as sent for review).
 
 ## Standing rules
@@ -35,7 +56,8 @@ table `sonuclar.md`, raw evidence, the `srectl` search), `post2-draft/` (the app
 - **Sources (D24):** no quotes from internal answers and no attribution to any team or group; claims rest on public
   docs (📄) or our own lab (✅).
 - **Live systems:** every change to a live system needs the go of Emre's assistant and is logged before it starts.
-  A lab that a session builds is torn down when its post is published (D31, D36).
+  Every post that needs a demo gets its own lab, built by the lab template's session and torn down after publishing
+  (D37). Credentials come from Drive `.env` files via `direnv exec`; values are never printed.
 
 ## Session 2026-10-06
 
