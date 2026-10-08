@@ -82,3 +82,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D36 | **"Keep Azure SRE Agent knowledge in git: one source, two paths" (TR + EN) is approved and published.** "Two paths" means knowledge for the long tail and skills for weekly procedures, both from one repository. The script's origin stays worded as a bash snippet run by hand. PowerShell tabs stay, with a short note that they were not run by us and follow the documentation. After publishing, the demo lab is torn down and the private demo repository is archived. | TASLAK-ONAY, R-1, R-2, R-3. |
+
+## 2026-10-08 — A lab per post (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D37 | **BLOG-LAB: every post that needs a demo gets its own lab.** By default it is built from the shared lab template with domain member servers, by the lab template's own session, and the details are handed to this project. A smaller, minimal lab is used only if this project proposes it with a reason, a cost estimate and a teardown plan, and Emre approves. The lab is torn down after its post is published (D31, D36). Another project's lab is never reused. | The template's name and the lab's names stay outside the repo (scrub denylist). This project does not build labs itself. |
