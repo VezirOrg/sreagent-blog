@@ -88,3 +88,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D37 | **BLOG-LAB: every post that needs a demo gets its own lab.** By default it is built from the shared lab template with domain member servers, by the lab template's own session, and the details are handed to this project. A smaller, minimal lab is used only if this project proposes it with a reason, a cost estimate and a teardown plan, and Emre approves. The lab is torn down after its post is published (D31, D36). Another project's lab is never reused. | The template's name and the lab's names stay outside the repo (scrub denylist). This project does not build labs itself. |
+
+## 2026-10-08 — Post 3 setup (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D38 | **Post 3 (restricting SRE Agent's VM commands with managed Run Command, `runAsUser`, a custom role and Azure Policy) is tested on its own lab's SRE Agent.** The agent's identity gets only Reader (already there) and the custom role, on the test VM only; both are removed at teardown. The Policy is assigned on the test VM, not the resource group. **The wrapping tool (the strongest level) is described in the post, not demonstrated.** **The run-as password lives only in the lab agent's instructions**; the session measures whether it appears in the agent's logs and the post shows the result as a warning. The value is never printed. | A2, L1, P1. Drafting starts only after the test results are relayed to Emre. |
