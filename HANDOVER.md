@@ -42,14 +42,11 @@ Post 3 https://claude.ai/artifact/WsjKAqUNLMHxSAiXhPS6dd · Posts 1–2 https://
 - **Teardown (D50, option A):** a post's lab is torn down when the post is published. Before teardown, keep in
   `files/` the build recipe (template env settings, post-specific objects, exact commands) and the test scripts and
   test plan, so a later D43 re-test rebuilds the lab instead of keeping it up. Teardown gets its lab-register row.
-  Not yet applied to any existing lab: Post 3's test lab is still up (recipe not yet saved); no teardown was asked.
+  Post 3's rebuild recipe (written after the fact): `files/post3-draft/rebuild-recipe.md`, scripts in
+  `files/post3-review-tests/scripts/`.
 - **Post 3's original lab is FROZEN evidence: never touch it** (Emre, 2026-10-09).
-- **Post 3's test lab** (built for the D43 tests by the template's session, before D47) still holds what the tests
-  left on purpose: the local user `sre-agent` and the run commands on the member server, the post's custom role, policy
-  definition and policy assignment, and a restricted user-assigned identity holding only the custom role on that
-  server. Temporary roles, the test role and the test policy assignment were removed and verified gone. The domain
-  controller has only its two original run commands. Do not run `azd up` on it (it would detach the identity).
-  Details: `files/post3-draft/test-results-261009.md`.
+- **Post 3's test lab** (built for the D43 tests) was torn down on 2026-10-09, 13:02–13:13, by the template's session
+  after Post 3 went live; it left nothing behind (its custom role and policy deleted first). To rebuild it, use the recipe above.
 - **Post 2's lab** was torn down on 2026-10-06 (L10 in `notes/261006-post2-demo-lab.md`).
 
 ## Open decisions for Emre
