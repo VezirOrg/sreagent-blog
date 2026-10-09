@@ -87,6 +87,8 @@ session, read it first and pass its URL.
 
 ## Standing rules
 
+- **Docs vs our result (D52):** when Learn or vendor docs contradict our test result or Emre's portal observation, never
+  resolve it yourself; list the conflict (doc text, link, date seen; our observation, where recorded) and ask Emre.
 - **Author profile (D21):** no personal or career text about Emre unless he approved that exact text. Name + headline.
 - **Privileges (D22):** say who runs a privileged command separately from what the service identity gets.
 - **Sources (D24):** no quotes from internal answers, no attribution to any team; claims rest on public docs (📄) or

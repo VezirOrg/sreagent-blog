@@ -155,6 +155,10 @@ Every new post goes through these steps in order (D5, D41). Emre sees a post onl
      post again. A clean second review goes on to step 4. A stuck finding (test failed, could not run, or flagged
      again) stops and goes to Emre as a short plain report. Wording and structure fixes need no test. Test logs stay
      in `files/`.
+   - **Docs vs our result (D52):** when Learn or other vendor docs contradict one of our test results or Emre's own
+     portal observation, do not resolve it: no doc line added beside ours, no rewording toward the doc, no dropping our
+     result. List the conflict (doc text, link, date seen; what we observed, where recorded) for Emre and leave the
+     text as it is until he answers.
    - Run the scrub check again.
 4. **Private preview.** Build: `hugo --buildDrafts --relativeURLs --uglyURLs -d <tmp>` (from a scratch copy of the repo
    with the bundle added) and publish it as a **private** preview. Its cover page carries a short **review summary**:
@@ -211,7 +215,7 @@ commit'te değişir.
 **Onay:** yazı `draft: true` ile repo dışında (`files/<slug>-draft/`) yazılır → `tech-blog-review` skill'i ile TR ve EN
 ayrı ayrı gözden geçirilir → özgün taslak tarihli bir kopya olarak saklanır, düzeltmeler uygulanır (olgular, komutlar
 ve test sonuçları yalnızca review işaret ettiyse değişir; Emre'nin doğrulaması gerekenler işaretlenir) → kısa bir
-review özetiyle özel önizleme (test edilmiş bir şeyi değiştirecek bulgular önce post'un kendi lab'inde test edilir, yalnızca geçenler uygulanır, düzeltilmiş yazı yeniden review edilir; takılan bulgu kısa bir raporla Emre'ye gider, D43) → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
+review özetiyle özel önizleme (test edilmiş bir şeyi değiştirecek bulgular önce post'un kendi lab'inde test edilir, yalnızca geçenler uygulanır, düzeltilmiş yazı yeniden review edilir; takılan bulgu kısa bir raporla Emre'ye gider, D43) (Learn ya da başka bir üretici dokümanı bizim test sonucumuzla ya da Emre'nin portal gözlemiyle çelişirse oturum bunu kendisi çözmez: çelişkiyi doküman metni, linki ve görüldüğü tarih ile bizim gözlemimiz ve kaydının yeri olarak listeler, Emre'ye sorar; yanıt gelene kadar metin olduğu gibi kalır, D52) → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
 
 **Lab'ler (D37, D47, D50):** demo gerektiren her yazının kendi lab'i olur; bu proje onu ortak lab şablonundan kendisi kurar (şablonun checkout'undan `azd`, her zaman açık `-e <env>` ve şablonun lab kaydındaki sıradaki boş ad; şablon projesinin oturumu açıkken asla; kimlik bilgileri yalnızca oradaki `direnv exec` ile). Kurulan ya da kaldırılan her lab aynı adımda şablonun lab kaydına (`docs/labs.md`) satır olarak girer. Yazı yayımlanınca lab'i kaldırılır (D50); kaldırmadan önce oturum, sonraki bir D43 yeniden testi lab'i ayakta tutmak yerine hızla yeniden kurabilsin diye kurulum tarifini (şablon env ayarları, yazıya özel nesneler ve tam komutlar) ve test betiklerini ile test planını `files/` içinde saklar.
 
