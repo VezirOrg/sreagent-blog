@@ -165,6 +165,12 @@ Every new post goes through these steps in order (D5, D41). Emre sees a post onl
    `content/posts/<slug>/`, commit with `post: publish <slug>`, push. The Pages workflow builds and deploys `main`.
 7. Nothing goes live without step 6. Making the repository public or enabling Pages is Emre's decision only.
 
+**Labs (D37, D47).** A post that needs a demo gets its own lab, which this project builds itself from the shared lab
+template: its `azd` from the template's checkout, always with an explicit `-e <env>` and the next free env name from the
+template's lab register (`docs/labs.md` there), never while a session of the template project is open, credentials only
+via `direnv exec` there. **Every lab the blog builds or tears down gets its row in that lab register in the same step.**
+Lab and template names stay outside this repo (scrub denylist, §4).
+
 ## 7. Voice
 
 The author is Emre Güçlü. Write the way he works: direct, concrete, technically precise, no hedging and no fluff.
@@ -203,6 +209,8 @@ commit'te değişir.
 ayrı ayrı gözden geçirilir → özgün taslak tarihli bir kopya olarak saklanır, düzeltmeler uygulanır (olgular, komutlar
 ve test sonuçları yalnızca review işaret ettiyse değişir; Emre'nin doğrulaması gerekenler işaretlenir) → kısa bir
 review özetiyle özel önizleme (test edilmiş bir şeyi değiştirecek bulgular önce post'un kendi lab'inde test edilir, yalnızca geçenler uygulanır, düzeltilmiş yazı yeniden review edilir; takılan bulgu kısa bir raporla Emre'ye gider, D43) → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
+
+**Lab'ler (D37, D47):** demo gerektiren her yazının kendi lab'i olur; bu proje onu ortak lab şablonundan kendisi kurar (şablonun checkout'undan `azd`, her zaman açık `-e <env>` ve şablonun lab kaydındaki sıradaki boş ad; şablon projesinin oturumu açıkken asla; kimlik bilgileri yalnızca oradaki `direnv exec` ile). Kurulan ya da kaldırılan her lab aynı adımda şablonun lab kaydına (`docs/labs.md`) satır olarak girer.
 
 **Yazar hakkında metin yok:** Emre'nin onayladığı birebir metin (asistanı iletmişse) dışında sitede Emre hakkında kişisel
 ya da kariyer metni yer almaz. Yazar kutusu yalnız ad ve unvan (D21). Rehber yalnız onun sesini taklit eder.
