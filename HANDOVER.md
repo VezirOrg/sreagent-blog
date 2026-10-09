@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command: custom role + Azure Policy on `runAsUser`) is ready and waiting on Emre's approval; nothing published.**
+**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command: custom role + Azure Policy on `runAsUser`) still waits on Emre's approval; nothing published. Review skill `tech-blog-review` added (D40).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public (D18), history included: everything committed must pass the scrub rules in
@@ -37,7 +37,11 @@ run-as password reaching the agent's logs, which Emre may drop.
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D39). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D40). Read it first.
+- `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill (D40), verbatim from his text. Use it to review or
+  restructure a post (fact-check the key claims, structure, language, strong Turkish review). Edit it only on his word.
+  Hugo does not build `.claude/`, so it never reaches the site (checked with a full build, 2026-10-09). The repo is
+  public, so the skill text is public too; the vezir was told.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`). Live:
   - `sql-mcp-part-1`: "Setting up SQL MCP for Azure SRE Agent", series part 1.
@@ -66,11 +70,14 @@ log), `post3-draft/` (the draft above), `261006-post2-plan.md`, `post2-demo/`, `
   values are never printed.
 - The session brief template says to make this repo private if found public; that conflicts with D18. Leave it public.
 
-## Session 2026-10-08/09
+## Session 2026-10-09 (skill)
 
-Recorded Post 3's scope (D39, commit 5ffc32c), wrote the TR+EN draft from the four allowed inputs plus Microsoft Learn
-(managed Run Command, Run Command overview: SYSTEM/root for action, runAs + Secondary Logon, 25-per-VM limit), built
-the private preview, reported to the vezir. No Azure changes. Closed on the nightly recycle before Emre answered.
+On Emre's word, via the vezir: added D40 (commit 5b48869), then copied his `tech-blog-review` skill into
+`.claude/skills/` byte for byte (commit d094d3c, sha256 matched). Both commits carry `[skip ci]`. Post 3 untouched; its
+approval gate is still open with Emre.
+
+Before that (2026-10-08/09): recorded Post 3's scope (D39), wrote the TR+EN draft and the private preview, reported to
+the vezir. No Azure changes.
 
 ## Publishing a post
 
