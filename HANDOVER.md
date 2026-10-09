@@ -1,7 +1,7 @@
 # HANDOVER — sreagent-blog
 
-**Live with 3 posts (TR+EN), all three reviewed under the D41–D49 flow and published. Nothing is in draft. Lab teardown
-timing decided (D50, option A).**
+**Live with 3 posts (TR+EN), all reviewed (D41–D49) and published. Nothing in draft, no lab up for this project;
+lab teardown rule settled (D50: tear down on publish, keep a rebuild recipe in `files/`).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English, https://sreagent.emreguclu.io. This repository is public (D18), history included: everything committed must
@@ -100,8 +100,10 @@ session, read it first and pass its URL.
 - Blowfish v3.8.0 declares Hugo up to 0.166; 0.167 warns but builds (D11).
 - Two subscription-level ARM deployment-history records from the Post 2 demo lab remain (no cost).
 
-## Last session (2026-10-09)
+## Last session (2026-10-09, late)
 
-Post 3: D43 tests in the test lab (incl. a restricted identity calling ARM from inside the lab), fixes, second review,
-published (ea1e84f). D44–D49 recorded. D37 corrected by D47 and swept repo-wide (0e74f76, ec7dfd7). Posts 1 and 2:
-language review, ✅ trace against the lab records, Emre's answers applied, published (d7a4a69).
+Recorded Emre's teardown decision as D50 (option A) in `docs/decisions.md`, the writing guide's Labs paragraphs (EN, TR)
+and here (d97f6d4). Post 3's test lab had already been torn down by the template's session; wrote its rebuild recipe
+after the fact (`files/post3-draft/rebuild-recipe.md`) and saved the dc test scripts from an old scratchpad into
+`files/post3-review-tests/scripts/` (fd2afa4). Earlier that day: Post 3 tested, reviewed and published (ea1e84f);
+Posts 1 and 2 reviewed and republished (d7a4a69); D44–D49.
