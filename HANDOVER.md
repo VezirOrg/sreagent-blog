@@ -1,10 +1,11 @@
 # HANDOVER — sreagent-blog
 
-**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command: custom role + Azure Policy on `runAsUser`) still waits on Emre's approval; nothing published. New posts are now reviewed with `tech-blog-review` and fixed before Emre sees them (D41).**
+**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command) waits on Emre, who now also decides whether it gets the new D41 review first. From D41 on, every new post is reviewed with `tech-blog-review` and fixed before Emre sees it.**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public (D18), history included: everything committed must pass the scrub rules in
-`docs/writing-guide.md` §4. Internal discussion, raw notes and unapproved material stay outside the repo, in `files/`.
+`docs/writing-guide.md` §4. Drafts, reviews, internal discussion, raw notes and unapproved material stay outside the
+repo, in `files/`. Read `CLAUDE.md` and `docs/decisions.md` (D1–D41) next.
 
 ## Post 3 — where it stands (2026-10-09)
 
@@ -40,8 +41,7 @@ run-as password reaching the agent's logs, which Emre may drop.
 - `docs/decisions.md`: every decision, dated (D1–D41). Read it first.
 - `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill (D40), verbatim from his text. Use it to review or
   restructure a post (fact-check the key claims, structure, language, strong Turkish review). Edit it only on his word.
-  Since D41 it is a fixed step of the publishing flow (below).
-  Hugo does not build `.claude/`, so it never reaches the site (checked with a full build, 2026-10-09). The repo is
+  Since D41 it is a fixed step of the publishing flow (below). Hugo does not build `.claude/`, so it never reaches the site (checked with a full build, 2026-10-09). The repo is
   public, so the skill text is public too; the vezir was told.
 - `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, and
   the publishing flow in §6 (draft → review → fix → preview → approval → publish).
@@ -73,20 +73,15 @@ log), `post3-draft/` (the draft above), `261006-post2-plan.md`, `post2-demo/`, `
   values are never printed.
 - The session brief template says to make this repo private if found public; that conflicts with D18. Leave it public.
 
-## Session 2026-10-09 (publishing flow)
+## Recent sessions
 
-On Emre's word, via the vezir: added D41 (review with `tech-blog-review` and fix before Emre sees a post) and wrote the
-new flow into `docs/writing-guide.md` §6 (plus the checklist and Turkish summary), this file and a new `CLAUDE.md`.
-Post 3 not touched.
-
-## Session 2026-10-09 (skill)
-
-On Emre's word, via the vezir: added D40 (commit 5b48869), then copied his `tech-blog-review` skill into
-`.claude/skills/` byte for byte (commit d094d3c, sha256 matched). Both commits carry `[skip ci]`. Post 3 untouched; its
-approval gate is still open with Emre.
-
-Before that (2026-10-08/09): recorded Post 3's scope (D39), wrote the TR+EN draft and the private preview, reported to
-the vezir. No Azure changes.
+- **2026-10-09, publishing flow:** on Emre's word via the vezir, added D41 (commit d877755) and wrote the flow into
+  `docs/writing-guide.md` §6 (plus the checklist line and the Turkish summary), this file and a new `CLAUDE.md` (commit
+  f9e4eaf). §6 used to say drafts are committed into the repo; it now matches practice (drafts in `files/`). The vezir
+  accepted it and took the Post 3 question to Emre. Post 3 not touched.
+- **2026-10-09, skill:** added D40 (5b48869) and Emre's `tech-blog-review` skill byte for byte (d094d3c, sha256 matched).
+- **2026-10-08/09:** recorded Post 3's scope (D39), wrote the TR+EN draft and the private preview, reported to the vezir.
+  No Azure changes.
 
 ## Publishing a post
 
@@ -116,8 +111,9 @@ Run at most one `hugo server` at a time on this machine, and stop it afterwards.
 ## Open decisions for Emre
 
 - **Post 3:** approve the draft (or changes); keep or drop the closing warning; ✅→📄 on the App Insights claim
-  (vezir recommends 📄). Its draft and preview predate D41 and were not reviewed with the skill; whether Post 3 goes
-  through the D41 review first is Emre's call. Do not review it until he says so.
+  (vezir recommends 📄). **New, asked by the vezir on 2026-10-09:** the draft and preview predate D41 and were not
+  reviewed with the skill; does Post 3 go through the D41 review (review → fix → new preview with a review summary)
+  before his approval, or is it approved as it is? Do not review it until he says so.
 - Site-wide, unchanged since 2026-10-04 (D17 holds until he answers): **content license** (suggested CC BY 4.0 text,
   MIT code); **language layout** (EN root, TR under `/tr/`); **Part 2 teaser** in the first post; **PNG covers** for
   social previews (no SVG-to-PNG converter on this machine).
