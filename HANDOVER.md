@@ -1,12 +1,12 @@
 # HANDOVER — sreagent-blog
 
-**Live with 3 posts (TR+EN), all three reviewed under the D41–D49 flow and published. Nothing is in draft. Open with
-Emre: when a post's lab is torn down (A/B/C, see below).**
+**Live with 3 posts (TR+EN), all three reviewed under the D41–D49 flow and published. Nothing is in draft. Lab teardown
+timing decided (D50, option A).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English, https://sreagent.emreguclu.io. This repository is public (D18), history included: everything committed must
 pass the scrub rules in `docs/writing-guide.md` §4. Drafts, reviews, test logs, internal discussion and raw notes stay
-outside the repo, in the gitignored `files/`. Read `CLAUDE.md` and `docs/decisions.md` (D1–D49) next.
+outside the repo, in the gitignored `files/`. Read `CLAUDE.md` and `docs/decisions.md` (D1–D50) next.
 
 ## Posts (all live, `content/posts/<slug>/`)
 
@@ -39,6 +39,10 @@ Post 3 https://claude.ai/artifact/WsjKAqUNLMHxSAiXhPS6dd · Posts 1–2 https://
   teardown gets its row in the template's lab register in the same step. Lab and template names never go into the
   repo (scrub denylist in `files/`). Every change to a live system needs the go of Emre's assistant and is logged
   before it starts. No test is driven through SRE Agent itself (D43).
+- **Teardown (D50, option A):** a post's lab is torn down when the post is published. Before teardown, keep in
+  `files/` the build recipe (template env settings, post-specific objects, exact commands) and the test scripts and
+  test plan, so a later D43 re-test rebuilds the lab instead of keeping it up. Teardown gets its lab-register row.
+  Not yet applied to any existing lab: Post 3's test lab is still up (recipe not yet saved); no teardown was asked.
 - **Post 3's original lab is FROZEN evidence: never touch it** (Emre, 2026-10-09).
 - **Post 3's test lab** (built for the D43 tests by the template's session, before D47) still holds what the tests
   left on purpose: the local user `sre-agent` and the run commands on the member server, the post's custom role, policy
@@ -50,15 +54,13 @@ Post 3 https://claude.ai/artifact/WsjKAqUNLMHxSAiXhPS6dd · Posts 1–2 https://
 
 ## Open decisions for Emre
 
-- **Lab teardown timing A/B/C:** when a post's lab is torn down, given that D43 re-tests need a lab after publishing.
-  Not decided; no D-entry yet. Until he decides, tear nothing down.
 - Site-wide, unchanged since 2026-10-04 (D17 holds until he answers): content license (suggested CC BY 4.0 text, MIT
   code); language layout (EN root, TR under `/tr/`); the Part 2 teaser in the first post; PNG covers for social
   previews (no SVG-to-PNG converter on this machine).
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D49). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D50). Read it first.
 - `docs/writing-guide.md`: what every post must have, scrub checklist (§4), TR/EN parity (§5), the publishing flow
   (§6, D41/D43) and the lab rules (after §6, D47).
 - `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill (D40), verbatim; edit only on his word. The blog's own

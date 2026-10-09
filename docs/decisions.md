@@ -151,3 +151,8 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 |---|---|---|
 | D49 | **Posts 1 (`sql-mcp-part-1`) and 2 (`sre-agent-knowledge-in-git`) are approved for publishing** in the D48 version, with these answers: **L-E:** both legend extensions stay, so 📄 also covers "read from code, not run"; **H-K:** Post 1's Turkish Finding 3 heading stays as it is (no anchor change); **UI:** the connector path is written exactly as the portal shows it, and where the record does not show the portal's form, the live post's current form stays; **DAB-E:** every 📄 claim that rests on DAB source code gets a link to that source beside it. Links to the two renumbered Post 2 step headings are fixed if any page uses the old anchors. | Language and evidence fixes only; no lab tests (D46). |
 
+## 2026-10-09 — When a post's lab is torn down (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D50 | **Option A: a post's lab is torn down when the post is published, as D37 says.** Before the teardown the session keeps, in `files/` (private), what is needed to rebuild the lab quickly: the **build recipe** (the template env settings, the post-specific objects and the exact commands that created them) and the **test scripts and test plan**. A later D43 re-test rebuilds the lab from that recipe (D47 rules) instead of keeping a lab up. The teardown gets its row in the template's lab register in the same step (D47). | Settles the open A/B/C teardown question. Post 3's original lab stays frozen evidence (Emre, 2026-10-09); this entry does not change that. |
