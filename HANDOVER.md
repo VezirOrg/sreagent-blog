@@ -1,6 +1,6 @@
 # HANDOVER — sreagent-blog
 
-**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command: custom role + Azure Policy on `runAsUser`) still waits on Emre's approval; nothing published. Review skill `tech-blog-review` added (D40).**
+**Live with 2 posts (TR+EN). Post 3 draft (VM Run Command: custom role + Azure Policy on `runAsUser`) still waits on Emre's approval; nothing published. New posts are now reviewed with `tech-blog-review` and fixed before Emre sees them (D41).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public (D18), history included: everything committed must pass the scrub rules in
@@ -37,12 +37,15 @@ run-as password reaching the agent's logs, which Emre may drop.
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D40). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D41). Read it first.
 - `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill (D40), verbatim from his text. Use it to review or
   restructure a post (fact-check the key claims, structure, language, strong Turkish review). Edit it only on his word.
+  Since D41 it is a fixed step of the publishing flow (below).
   Hugo does not build `.claude/`, so it never reaches the site (checked with a full build, 2026-10-09). The repo is
   public, so the skill text is public too; the vezir was told.
-- `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, review flow.
+- `docs/writing-guide.md`: what every post must have, front matter, shortcodes, scrub checklist, TR/EN parity, and
+  the publishing flow in §6 (draft → review → fix → preview → approval → publish).
+- `CLAUDE.md`: short pointer for sessions to this file and the publishing flow.
 - `content/posts/<slug>/`: one page bundle per post (`index.en.md`, `index.tr.md`, `feature.*`). Live:
   - `sql-mcp-part-1`: "Setting up SQL MCP for Azure SRE Agent", series part 1.
   - `sre-agent-knowledge-in-git`: "Keep Azure SRE Agent knowledge in git: one source, two paths", standalone.
@@ -70,6 +73,12 @@ log), `post3-draft/` (the draft above), `261006-post2-plan.md`, `post2-demo/`, `
   values are never printed.
 - The session brief template says to make this repo private if found public; that conflicts with D18. Leave it public.
 
+## Session 2026-10-09 (publishing flow)
+
+On Emre's word, via the vezir: added D41 (review with `tech-blog-review` and fix before Emre sees a post) and wrote the
+new flow into `docs/writing-guide.md` §6 (plus the checklist and Turkish summary), this file and a new `CLAUDE.md`.
+Post 3 not touched.
+
 ## Session 2026-10-09 (skill)
 
 On Emre's word, via the vezir: added D40 (commit 5b48869), then copied his `tech-blog-review` skill into
@@ -81,23 +90,34 @@ the vezir. No Azure changes.
 
 ## Publishing a post
 
-1. Write both languages with `draft: true` **outside the repo** (`files/<post>-draft/`). Pass
+The flow is D41, written out in `docs/writing-guide.md` §6. Emre sees a post only after steps 1–3.
+
+1. **Draft** both languages with `draft: true` **outside the repo** (`files/<post>-draft/`). Pass
    `scripts/scrub-check.sh <path>`.
-2. Private preview: copy the repo (without `files`, `.git`) to a scratch folder, add the bundle under `content/posts/`,
-   then `HUGO_RELATIVEURLS=true HUGO_UGLYURLS=true hugo -s . --buildDrafts --baseURL / -d <tmp>/site`; drop `CNAME`,
-   `*.xml`, `*.json`; rewrite relative links ending in `/` to `…/index.html`. Publish as a private claude.ai artifact
-   whose cover page links into the site; the site's root `index.html` cannot be a supporting file, leave it out.
-   Republishing the Post 3 preview from a new session: pass its URL as `url` after reading it.
-3. Emre approves → D-entry, `draft: false` in both languages, copy the bundle into `content/posts/<slug>/`, commit
-   `post: publish <slug>`, push. Check `https://sreagent.emreguclu.io/posts/<slug>/` and `/tr/posts/<slug>/` answer 200
-   (a single 503 right after deploy happened once and cleared on retry).
+2. **Review** with `.claude/skills/tech-blog-review`, TR and EN each on its own terms. Save the review as
+   `files/<post>-draft/review-YYMMDD.md`.
+3. **Fix.** Copy the draft bundle to `files/<post>-draft/original-YYMMDD/` first (never edit that copy), then apply the
+   fixes to both languages. Facts, commands, code and test results (✅/📄 too) change only where the review flagged
+   them; mark anything Emre must verify. Re-run the scrub check.
+4. **Private preview** with a short **review summary** on its cover page: top findings, what was changed, what is left
+   for Emre to decide. Build: copy the repo (without `files`, `.git`) to a scratch folder, add the bundle under
+   `content/posts/`, then `HUGO_RELATIVEURLS=true HUGO_UGLYURLS=true hugo -s . --buildDrafts --baseURL / -d
+   <tmp>/site`; drop `CNAME`, `*.xml`, `*.json`; rewrite relative links ending in `/` to `…/index.html`. Publish as a
+   private claude.ai artifact whose cover page links into the site; the site's root `index.html` cannot be a
+   supporting file, leave it out. Republishing an existing preview from a new session: pass its URL as `url` after
+   reading it. Send the link to the vezir for Emre.
+5. **Emre approves** (his changes go back into the bundle, then a new preview) → D-entry, `draft: false` in both
+   languages, copy the bundle into `content/posts/<slug>/`, commit `post: publish <slug>`, push. Check
+   `https://sreagent.emreguclu.io/posts/<slug>/` and `/tr/posts/<slug>/` answer 200 (a single 503 right after deploy
+   happened once and cleared on retry).
 
 Run at most one `hugo server` at a time on this machine, and stop it afterwards.
 
 ## Open decisions for Emre
 
 - **Post 3:** approve the draft (or changes); keep or drop the closing warning; ✅→📄 on the App Insights claim
-  (vezir recommends 📄).
+  (vezir recommends 📄). Its draft and preview predate D41 and were not reviewed with the skill; whether Post 3 goes
+  through the D41 review first is Emre's call. Do not review it until he says so.
 - Site-wide, unchanged since 2026-10-04 (D17 holds until he answers): **content license** (suggested CC BY 4.0 text,
   MIT code); **language layout** (EN root, TR under `/tr/`); **Part 2 teaser** in the first post; **PNG covers** for
   social previews (no SVG-to-PNG converter on this machine).

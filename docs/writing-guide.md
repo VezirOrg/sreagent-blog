@@ -28,6 +28,7 @@ A post is ready for review only when every box is ticked, in **both** languages.
 - [ ] **Scrub checklist** passed (see §4). No lab identifiers, no secrets, no customer data.
 - [ ] **TR and EN parity** (see §5).
 - [ ] **Front matter** complete (see §2).
+- [ ] **Reviewed and fixed** with `tech-blog-review`, TR and EN each on its own terms, before Emre sees it (see §6, D41).
 - [ ] **Approval**: Emre approved this exact version (see §6). Until then `draft: true`.
 
 ## 2. Files and front matter
@@ -133,12 +134,28 @@ Standard placeholders:
 
 ## 6. Review and approval
 
-1. Write the post with `draft: true`. Commit it (it must already pass the scrub check, see §4).
-2. Build a preview: `hugo --buildDrafts --relativeURLs --uglyURLs -d <tmp>` and publish it as a **private** preview.
-3. Emre reviews it. Changes go back into the bundle; repeat 2–3.
-4. On approval: set `draft: false` in **both** languages, set `date`, commit with `post: publish <slug>`, push.
-   The Pages workflow builds and deploys `main`.
-5. Nothing goes live without step 4. Making the repository public or enabling Pages is Emre's decision only.
+Every new post goes through these steps in order (D5, D41). Emre sees a post only after step 3.
+
+1. **Draft.** Write both languages with `draft: true` **outside the repo**, in the gitignored `files/<slug>-draft/`
+   folder. It must pass the scrub check (§4) and the checklist (§1).
+2. **Review.** Review the draft with the project skill `.claude/skills/tech-blog-review`. Review the TR and the EN
+   version **each on its own terms** (the Turkish one gets the skill's Turkish language review). Keep the full review
+   beside the draft (`files/<slug>-draft/review-YYMMDD.md`).
+3. **Fix.** First keep the original: copy the draft bundle to `files/<slug>-draft/original-YYMMDD/` and never edit
+   that copy. Then apply the review's fixes to both languages and keep TR/EN parity (§5).
+   - Never change a fact, a command, a code block or a test result (including a ✅/📄 marker) unless the review flagged
+     it.
+   - Mark anything Emre must verify, as the skill says; list each one in the review summary.
+   - Keep front matter, slug and URLs.
+   - Run the scrub check again.
+4. **Private preview.** Build: `hugo --buildDrafts --relativeURLs --uglyURLs -d <tmp>` (from a scratch copy of the repo
+   with the bundle added) and publish it as a **private** preview. Its cover page carries a short **review summary**:
+   the top findings, what was changed, and anything left for Emre to decide.
+5. **Approval.** Emre reviews it. His changes go back into the bundle; rebuild the preview and repeat until he
+   approves this exact version.
+6. **Publish.** On approval: set `draft: false` in **both** languages, set `date`, copy the bundle into
+   `content/posts/<slug>/`, commit with `post: publish <slug>`, push. The Pages workflow builds and deploys `main`.
+7. Nothing goes live without step 6. Making the repository public or enabling Pages is Emre's decision only.
 
 ## 7. Voice
 
@@ -174,8 +191,10 @@ standart yer tutucular kullanılır; `scripts/scrub-check.sh` geçmeli. Gerçek 
 **TR–EN eşliği:** iki dosya aynı bölümler, aynı komutlar, aynı işaretler ve aynı sayılarla; biri değişirse öteki aynı
 commit'te değişir.
 
-**Onay:** yazı `draft: true` ile yazılır → özel önizleme → Emre onaylar → iki dilde `draft: false`, commit, push →
-workflow yayımlar. Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
+**Onay:** yazı `draft: true` ile repo dışında (`files/<slug>-draft/`) yazılır → `tech-blog-review` skill'i ile TR ve EN
+ayrı ayrı gözden geçirilir → özgün taslak tarihli bir kopya olarak saklanır, düzeltmeler uygulanır (olgular, komutlar
+ve test sonuçları yalnızca review işaret ettiyse değişir; Emre'nin doğrulaması gerekenler işaretlenir) → kısa bir
+review özetiyle özel önizleme → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
 
 **Yazar hakkında metin yok:** Emre'nin onayladığı birebir metin (asistanı iletmişse) dışında sitede Emre hakkında kişisel
 ya da kariyer metni yer almaz. Yazar kutusu yalnız ad ve unvan (D21). Rehber yalnız onun sesini taklit eder.
