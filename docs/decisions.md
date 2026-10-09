@@ -187,3 +187,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 |---|---|---|
 | D55 | **The reworked Post 2 (`sre-agent-knowledge-in-git`, TR + EN) is approved and published** in the final preview version (v3): thesis-led introduction with the Azure DevOps / GitHub branch (D51), flat example layout, skills as a short section (D54 A), curl paths per CU-b. Slug and URL unchanged. | Archive of the previous live version: `files/archive/261009-pre-thesis/`. |
 
+
+## 2026-10-09 — Post 4's purpose (Emre's words, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D56 | **Post 4 (slug to be decided) purpose, D53:** "Find the critical performance problems in a real-world, anonymised 3-hour PerfMon capture whose cause is unknown, then dig deep into the ones that make the machine hard to use, by letting Azure SRE Agent query it as a SQLite database through a skill, without burning tokens on raw data." | Taken from Emre's words on 2026-10-09; he may still reword it. Same day, Emre widened the scope: not memory-only, the cause is treated as unknown (a friend's slow machine), so the work is a broad triage first and depth only on what makes the machine hard to use; the earlier "a machine that ran out of RAM" wording is dropped. Data: a real capture, already anonymised by Emre, free to use; the raw data, the converted database and the baseline analysis stay in `files/` (private). The converter is public under `tools/`. Step 1 runs on the Mac: converter, baseline analysis (our ground truth), the skill `perfmon-triage` kept in `files/` until Emre decides, and a blind local test of the skill by a fresh subagent scored against the baseline (at most 3 rounds). The agent run in a lab comes after the local proof. |
