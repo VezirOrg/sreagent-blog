@@ -22,6 +22,7 @@ A post is ready for review only when every box is ticked, in **both** languages.
 - [ ] **Troubleshooting**: a symptom → cause → fix table, at least for the failures we actually hit.
 - [ ] **Evidence markers** on every factual claim: ✅ = proven in our lab, 📄 = documented only (Learn, source code,
       release notes), not tested by us. The legend line goes near the top. Never mark something ✅ that we did not run.
+      Every claim keeps its marker, even where the review skill says to mark only exceptions (D44).
 - [ ] **What we learned**: the 3–6 findings worth remembering, written as plain statements, not a recap of the steps.
 - [ ] **Feature image** (`feature.svg` or `feature.png`, 1200 × 630) in the page bundle. It is the card thumbnail on the
       home page and the hero on the post. Keep text in it language-neutral (it is shared by TR and EN).
