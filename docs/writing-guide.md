@@ -137,10 +137,13 @@ Standard placeholders:
 
 Every new post goes through these steps in order (D5, D41). Emre sees a post only after step 3.
 
+0. **Purpose (D53).** Before any draft, write the post's purpose as one sentence in `docs/decisions.md` and get Emre's
+   approval for it. No draft starts without it.
 1. **Draft.** Write both languages with `draft: true` **outside the repo**, in the gitignored `files/<slug>-draft/`
    folder. It must pass the scrub check (§4) and the checklist (§1).
 2. **Review.** Review the draft with the project skill `.claude/skills/tech-blog-review`. Review the TR and the EN
-   version **each on its own terms** (the Turkish one gets the skill's Turkish language review). Keep the full review
+   version **each on its own terms** (the Turkish one gets the skill's Turkish language review). The review takes the
+   post's purpose from its D53 entry in `docs/decisions.md`, never from the post itself. Keep the full review
    beside the draft (`files/<slug>-draft/review-YYMMDD.md`).
 3. **Fix.** First keep the original: copy the draft bundle to `files/<slug>-draft/original-YYMMDD/` and never edit
    that copy. Then apply the review's fixes to both languages and keep TR/EN parity (§5).
@@ -211,6 +214,8 @@ standart yer tutucular kullanılır; `scripts/scrub-check.sh` geçmeli. Gerçek 
 
 **TR–EN eşliği:** iki dosya aynı bölümler, aynı komutlar, aynı işaretler ve aynı sayılarla; biri değişirse öteki aynı
 commit'te değişir.
+
+**Amaç önce (D53):** taslaktan önce yazının amacı tek cümle olarak `docs/decisions.md`'ye yazılır ve Emre onaylar; her review amacı oradan alır, yazıdan çıkarmaz.
 
 **Onay:** yazı `draft: true` ile repo dışında (`files/<slug>-draft/`) yazılır → `tech-blog-review` skill'i ile TR ve EN
 ayrı ayrı gözden geçirilir → özgün taslak tarihli bir kopya olarak saklanır, düzeltmeler uygulanır (olgular, komutlar

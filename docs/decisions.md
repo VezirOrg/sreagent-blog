@@ -168,3 +168,10 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D52 | **Standing rule: when Microsoft Learn or other vendor docs contradict one of our test results, or Emre's own portal observation, the session does not resolve it.** No automatic "add the doc's line 📄 beside ours", no rewording toward the doc, no dropping our result. It lists the conflict (what the doc says, its link and the date it was seen; what we observed and where it is recorded) and asks Emre through his assistant; the post text stays as it is until he answers. | Replaces the blanket DOC-1 handling of D48 for every future review. Already-decided points stay decided (Post 2's Code Access point: D51). |
+
+## 2026-10-09 — A post's purpose comes first (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D53 | **Standing rule: every post's purpose is written as one sentence in this file, with Emre's approval, before any draft is written.** Every review takes the purpose from that entry (the `tech-blog-review` skill's §1 "Purpose") and never infers it from the post. **Post 2 (`sre-agent-knowledge-in-git`), from D51:** "Show that adding knowledge to Azure SRE Agent today means uploading files by hand and that a repository connected through Code Access does not become knowledge, so the documents belong in a git repository of their own, pushed into the agent's knowledge by a custom script that a pipeline runs on every update." Posts 1 and 3: one-sentence purposes are proposed to Emre and recorded here only once he approves them. | Rule written into `docs/writing-guide.md` §6 (planning and review steps). |
+

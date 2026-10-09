@@ -87,6 +87,8 @@ session, read it first and pass its URL.
 
 ## Standing rules
 
+- **Purpose first (D53):** every post's purpose is one sentence in `docs/decisions.md`, approved by Emre before any
+  draft; reviews take it from there. Post 2's is recorded; Posts 1 and 3 are proposed, awaiting Emre.
 - **Docs vs our result (D52):** when Learn or vendor docs contradict our test result or Emre's portal observation, never
   resolve it yourself; list the conflict (doc text, link, date seen; our observation, where recorded) and ask Emre.
 - **Author profile (D21):** no personal or career text about Emre unless he approved that exact text. Name + headline.
