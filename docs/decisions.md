@@ -112,3 +112,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D41 | **Every new post is reviewed with the `tech-blog-review` skill and fixed before Emre sees it for approval.** Flow: draft → review with `.claude/skills/tech-blog-review` (TR and EN each reviewed on its own terms) → apply the fixes → private preview with a short review summary (top findings, what was changed, anything left for Emre to decide) → Emre approves → publish. In the fix step, facts, commands and test results change only where the review flagged them, and anything Emre must verify is marked, as the skill says. The original draft is kept as a dated copy beside the draft, outside the repo. | Adds a step before D5's approval; D5 still holds. The flow is written out in `docs/writing-guide.md` §6. |
+
+## 2026-10-09 — Existing posts through the review (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D42 | **Every existing post goes through the D41 flow: Post 1 (`sql-mcp-part-1`), Post 2 (`sre-agent-knowledge-in-git`), both live, and the Post 3 draft. They are archived first.** "Archive" means keeping the current versions untouched; nothing is taken offline. Live posts stay live, unchanged, until Emre approves their reviewed versions; slugs, front matter and URLs stay as they are. Archive scheme: (1) an annotated git tag `posts-pre-review-261009` on `main` before any review change, pushed; (2) dated, untouched copies outside the repo in `files/archive/261009-pre-review/`: both live bundles (`index.tr.md`, `index.en.md`, `feature.svg`) and the Post 3 draft folder as it was. The archive is never edited afterwards. Order, per the skill's rule for several posts: Post 3 first; Posts 1 and 2 start only after Emre's OK on the direction. | Reviewed versions of the live posts are drafted in `files/<slug>-draft/` like new posts, and go live only by a `post:` commit after approval. |
