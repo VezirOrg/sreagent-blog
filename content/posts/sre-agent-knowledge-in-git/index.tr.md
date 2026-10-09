@@ -1,38 +1,79 @@
 ---
-title: "Azure SRE Agent bilgisini git'te tutmak: tek kaynak, iki yol"
-description: "Runbook'lar git'te yaşar; bir GitHub Actions workflow'u her değişikliği public data-plane API ile agent'ın knowledge base'ine taşır. Ekleme, değişiklik ve silme merge'ü izler; CI kimliğinin tek bir agent üzerinde tek bir rolü vardır."
+title: "Azure SRE Agent bilgisini git'te tutmak: bir betik ve bir pipeline ile senkron"
+description: "Azure SRE Agent knowledge'ı yüklenen dosyalardan alıyor; Code Access ile bağlanan bir GitHub reposu knowledge olmuyor. Dokümanları kendi GitHub reposunda tutun; bir betik onları public data-plane API ile yüklesin, bir pipeline da betiği her merge'de çalıştırsın."
 date: 2026-10-06
 draft: false
 tags: ["azure-sre-agent", "knowledge", "github-actions", "entra-id", "skills"]
 showTableOfContents: true
 ---
 
-Runbook'ları Azure SRE Agent'a elle yüklemek ilk gün işe yarar. Otuzuncu günde knowledge base ile git'teki runbook'lar
-artık aynı şeyi söylemez: pull request'te yapılan bir düzeltme agent'a hiç ulaşmaz, kullanımdan kaldırılmış bir
-runbook'tan hâlâ yanıt verilir ve agent'ın hangi sürümü okuduğunu kimse söyleyemez. Bir runbook'un yazıldığı tek yerin git olmasını,
-agent'ın knowledge base'inin de her merge'ü kendiliğinden izlemesini istedik.
+Azure SRE Agent sorulara knowledge base'inden, yani ekibinizin ona verdiği runbook ve kılavuzlardan yanıt verir. Bugün
+bunları portalda dosya yükleyerek (**Builder > Knowledge base > Add file**) ya da agent'tan sohbette bir dokümanı
+kaydetmesini isteyerek eklersiniz. 📄 Başlangıç için pratik yol bu: birkaç Markdown dosyası yüklersiniz, agent da
+onları kullanır.
+
+Dokümanlar değişmeye başlayınca bu yetmez. Runbook'ları birkaç kişi yazar; review'dan geçmeleri, geçmişlerinin
+tutulması ve değiştikleri anda agent'a ulaşmaları gerekir. Git reposu review'u, geçmişi ve geri almayı zaten veriyor; bu
+yüzden dokümanların yeri git. Oradan sonrası reponun nerede durduğuna bağlı:
+
+- **Azure DevOps.** Portalda ayarları Azure DevOps'u gösteren bir **Documentation connector** var ✅; Learn onu bir
+  Azure DevOps wiki'sini ya da Git reposunu tarayıp 24 saatte bir yeniden indeksleyen bir connector olarak anlatıyor. 📄
+  Onu test etmedik.
+- **GitHub.** Yerleşik bir yol yok. Dokümantasyon bir repoyu knowledge kaynağı olarak eklemeyi anlatıyor 📄; ancak
+  portalda, Ekim 2026 itibarıyla böyle bir seçenek yok: bir GitHub reposu yalnızca **Code Access** ile bağlanıyor. ✅
+  2026-10-06'da Code Access ile bağladığımız repo da knowledge olmadı: agent repoyu okuyabildi, ama memory search onda
+  hiçbir şey bulamadı. ✅
+
+Bu yazı GitHub durumunu anlatıyor. Dokümanlar kendilerine ait bir git reposunda duruyor; kısa bir Python betiği onları public
+data-plane API ile agent'ın knowledge base'ine yüklüyor; bir pipeline (bir GitHub Actions workflow'u) da bu betiği her
+merge'de çalıştırıyor. Ekleme, değişiklik ve silme, merge'den 26 ile 34 saniye sonra agent'a ulaştı. ✅
 
 ✅ = lab'imizde kanıtlandı · 📄 = yalnızca dokümantasyonda var (Microsoft Learn, Microsoft'un public örnekleri ya da bu yazıda gösterilen kod), bizim tarafımızda test edilmedi.
 Bütün komutları zsh'te çalıştırdık. PowerShell sekmeleri bizim tarafımızda test edilmedi; dokümantasyona dayanıyor. 📄
 
 ## Amaç ve hedef kitle
 
-**Amaç.** Yazının sonunda runbook'lar bir git reposunun tek bir klasöründe duruyor. `main`'e yapılan ve `docs/`
-altındaki dosyaları değiştiren her merge, kısa bir GitHub Actions workflow'unu çalıştırıyor: workflow yeni ve değişen
-dosyaları agent'ın knowledge base'ine yüklüyor, sildiklerinizi oradan da siliyor. Workflow OIDC ile oturum açıyor:
-hiçbir yerde secret saklanmıyor ve kullandığı kimlik Azure'da yalnızca tek bir agent'a erişebiliyor, başka hiçbir şeye
-değil. Başlıktaki iki yoldan ikincisini, yani nöbetçi ekibinizin her hafta kullandığı birkaç prosedürü, yazının
-sonundaki skill bölümü anlatıyor.
+**Amaç.** Yazının sonunda runbook'lar kendi git reposunun tek bir klasöründe duruyor ve yazıldıkları tek yer bu repo.
+`main`'e yapılan ve `docs/` altındaki dosyaları değiştiren her merge, kısa bir GitHub Actions workflow'unu çalıştırıyor:
+workflow yeni ve değişen dosyaları agent'ın knowledge base'ine yüklüyor, sildiklerinizi oradan da siliyor. Workflow
+OIDC ile oturum açıyor: hiçbir yerde secret saklanmıyor ve kullandığı kimlik Azure'da yalnızca tek bir agent'a
+erişebiliyor, başka hiçbir şeye değil.
 
 **Kimler için.** Azure SRE Agent işleten ve runbook'larını GitHub'da tutan ya da tutmak isteyen mühendisler. `az`, GitHub
 Actions ve Azure rol atamaları size yabancı olmamalı.
 
-## Neden repoyu bağlayıp bırakmıyoruz
+## Çözüme kısa bakış
 
-SRE Agent bir repoyu **Code Access** ile de bağlayabiliyor. Bunun, repodaki dokümanları knowledge base'e koyduğu
-sanılabilir; Microsoft Learn de artık bağlı bir repoyu bir knowledge kaynağı olarak anlatıyor. 📄 Biz bunu 2026-10-06'da
-yeni bir agent ve benzersiz "kanarya" dizeleri (modelin başka hiçbir yerden bilemeyeceği uydurma bilgiler) taşıyan
-private bir repoyla lab'de test ettik:
+Dokümanlar Azure DevOps'taysa önce Documentation connector'ı deneyin (📄, bizim tarafımızda test edilmedi). GitHub'daysa
+şu dört adım:
+
+1. **Elle yükleme başlangıçtır.** Agent'ın dokümanları kullandığını görmek için portalda birkaç dosya yükleyin. 📄
+2. **Kaynak git'tir.** Dokümanları kendilerine ait bir reponun `docs/runbooks/` klasörüne taşıyın; değişiklikler pull
+   request ile yapılsın.
+3. **Köprü Code Access değildir.** Bugün portalda bir GitHub reposunu bağlamanın tek yolu o ✅; lab'imizde agent'ın repoyu okumasını
+   sağladı ama dokümanları knowledge base'e koymadı (sonraki bölüm). ✅
+4. **Köprü bir betik ve bir pipeline'dır.** `tools/sre_kb_sync.py` public data-plane API ile yeni ve değişen dosyaları
+   yükler, kaldırılanları siler ve indexer'ı bekler; bir GitHub Actions workflow'u onu her merge'de çalıştırır. ✅
+
+İstek yolunu [mimari](#mimari) gösteriyor, kurulumu [adımlar](#adımlar) anlatıyor.
+
+## Code Access ile agent repoyu okur, dokümanlar knowledge olmaz
+
+Microsoft Learn bir repoyu bağlamak için iki yer anlatıyor: agent'a kod araması ve dosya okuma veren **Builder > Code
+Access** ve **Builder > Knowledge base** altında, bir repoyu "agent'ınız onu bir knowledge kaynağı olarak
+indeksleyebilsin diye" bağlayan **Add repository** kartı. 📄 Portalda, Ekim 2026 itibarıyla böyle bir kart yok: bir GitHub
+reposu yalnızca Code Access ile bağlanıyor. ✅ Bu yüzden önemli olan da, test ettiğimiz de Code Access yolu. Repomuzu bu yoldan,
+portaldan değil agent'ın API'si ile bağladık. ✅
+
+"Repoyu bağlamak" iki ayrı anlama gelebilir:
+
+- **Agent repoyu okuyabilir.** Repo agent'ın çalışma alanına klonlanır, agent da dosyalarda kendi dosya araçlarıyla
+  arama yapar. ✅
+- **Dokümanlar knowledge olarak indekslenir.** Knowledge base'de listelenirler, semantik arama için indekslenirler 📄,
+  memory search onları bulur ve kaynak gösterir ✅ (bkz. [Doğrulama](#doğrulama)). Bunu yükleme yapar.
+
+Code Access ile bağlanan bir reponun bunlardan hangisini aldığını 2026-10-06'da yeni bir agent ve benzersiz "kanarya"
+dizeleri (modelin başka hiçbir yerden bilemeyeceği uydurma bilgiler) taşıyan private bir repoyla test ettik:
 
 - Repo bağlandıktan hemen sonra knowledge base'in dosya listesi **boştu**. Repo bunun yerine agent'ın çalışma alanına
   klonlandı. ✅
@@ -41,9 +82,10 @@ private bir repoyla lab'de test ettik:
 - Aynı soruyu sade bir cümleyle sorduğumuzda yanıtı klonlanmış dosyalarda **Grep Search** ile buldu ve GitHub'daki
   dosyaya ve satıra link verdi. ✅
 
-Yani lab'imizde bağlı bir repo **dosya** olarak arandı; **knowledge** olarak indekslenmedi. Runbook'larınızın knowledge base'e
-girmesini ve memory search sonuçlarında kaynak olarak gösterilmesini istiyorsanız, onları bir şeyin yüklemesi gerekir.
-Bu işi aşağıdaki workflow yapıyor.
+Yani lab'imizde Code Access ile bağlanan repo **dosya** olarak okunabildi; dokümanları **knowledge** olarak indekslenmedi.
+✅ Runbook'larınızın knowledge base'e girmesini ve memory search
+sonuçlarında kaynak olarak gösterilmesini istiyorsanız, onları bir şeyin yüklemesi gerekir. Bu işi aşağıdaki betik ve
+pipeline yapıyor.
 
 {{< alert icon="triangle-exclamation" >}}
 Yine de bir repoyu Code Access ile bağlarsanız, ona **yalnızca o repo için, salt okunur (Contents: Read) bir fine-grained
@@ -99,19 +141,24 @@ ekleyin; (4) betiği önce yerelde `--dry-run` ile deneyin; (5) betiği çalış
 
 ```text
 docs/runbooks/
-  payments/db-failover.md
-  payments/refund-replay.md
-  network/dns-failover.md
-  only-in-repo/...          (excluded through .kbignore)
+  payments-db-failover.md
+  payments-refund-replay.md
+  payments-latency.md
+  storage-latency.md
+  network-dns-failover.md
+  only-in-repo/...          (excluded through .kbignore, never uploaded)
 tools/sre_kb_sync.py
 .kbignore
 .github/workflows/knowledge-sync.yml
 ```
 
-Knowledge base **düzdür**, klasör tutmaz: bir dosya klasör yolu olmadan, yalnızca dosya adıyla saklanır ve aynı adla
-yüklenen dosya eski dokümanın yerine geçer. 📄 Farklı klasörlerdeki iki `latency.md` birbirinin üzerine yazar; bu
-yüzden betik, aynı adı taşıyan iki dosya bulursa çalışmadan hata veriyor. 📄 (aşağıdaki betik; bu durumu tetiklemedik) Runbook'lara klasörün tamamında benzersiz adlar verin (`payments-latency.md`,
-`storage-latency.md`).
+`payments-latency.md` ile `storage-latency.md` neden `payments/` ve `storage/` klasörlerinde değil de yan yana duruyor:
+knowledge base yalnızca dosya adını tutar. Learn bunu klasörden yüklemeler için anlatıyor: klasör yapısı korunmaz
+(`runbooks/networking/dns-troubleshooting.md`, `dns-troubleshooting.md` olarak görünür) ve var olan bir adla yüklenen
+dosya eski dokümanın yerine geçer. 📄 Yani `payments/latency.md` ile `storage/latency.md` ikisi de `latency.md` olur ve
+ikinci yükleme birincinin yerine geçer. Senkron betiği yalnızca dosya adını gönderir ve aynı adı taşıyan iki dosya
+bulursa çalışmadan hata verir. 📄 (aşağıdaki betik; bu durumu tetiklemedik) Her runbook'a klasörün tamamında benzersiz
+bir ad verin. Knowledge base'e hiç gitmeyen dosyalar için klasör kullanmakta sakınca yok; `only-in-repo/` gibi.
 
 `.kbignore`, git'te kalan ama knowledge base'e hiç yüklenmeyen yolların öneklerini, her satıra bir tane olacak şekilde
 listeler:
@@ -202,9 +249,12 @@ ENDPOINT=$(az resource show \
   --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv)
 TOKEN=$(az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv)
 curl -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TOKEN" \
-  -F "files=@docs/runbooks/payments/db-failover.md" -F "files=@docs/runbooks/network/dns-failover.md"
+  -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
 curl "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
 ```
+
+Yollar 1. adımdaki düzene uyuyor; demomuz bu snippet'i eski alt klasör yollarıyla çalıştırdı
+(`payments/db-failover.md`, `network/dns-failover.md`).
 
 Tek bir yükleme için bu yeterli. Ama sildiğiniz bir runbook'u knowledge base'den kaldırmıyor ve aynı adlı iki dosyanın
 birbirinin üzerine yazmasını engellemiyor. `tools/sre_kb_sync.py` aynı dört çağrının genişletilmiş hâli:
@@ -497,7 +547,9 @@ python tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <
 ```
 
 Örnek, repoyu aşağıdaki Doğrulama testlerinden önceki hâliyle gösteriyor: repoda hâlâ Silme testinin kaldırdığı
-`payments/api/latency.md` vardı, Ekleme testinin oluşturduğu `network/dns-failover.md` ise henüz yoktu. ✅
+`payments/api/latency.md` vardı, Ekleme testinin oluşturduğu `network/dns-failover.md` ise henüz yoktu. ✅ Demo repomuz
+hâlâ alt klasörler kullanıyordu (her dosya adı benzersizdi); bu yüzden bu örnekteki ve Doğrulama tablosundaki yollar
+kaydedilen yollar ve 1. adımdaki düzenden farklı.
 
 Gerçek çalıştırma (`--dry-run` olmadan) için kendi hesabınızın agent üzerinde SRE Agent Administrator rolü olmalı ✅;
 endpoint'i ARM'den alıyorsanız agent kaynağını okuma yetkisi de gerekir. 📄
@@ -596,16 +648,6 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } -Uri "$ENDPOINT/
 Portalda aynı dosyalar **Builder > Knowledge base** altında **Indexed** durumuyla görünür. 📄 Sohbette bir tool kartında
 `Memory Search: Found 1 relevant results` yazar ve yanıt dokümanın adını verir. ✅
 
-## Sık kullanılan prosedürler: onları skill yapın
-
-Knowledge, agent aramaya karar verdiğinde aranır. **Skill** farklıdır: açıklaması agent'ın talimatlarında durur ve görev
-eşleştiğinde agent skill'i kendisi yükler. 📄 Aynı iade prosedürünü, farklı kanaryalarla, iki yere de koyduk ve beş yeni
-sohbette beş farklı ifadeyle sorduk. Agent **beşinde de skill'i** kullandı, knowledge dokümanını hiç kullanmadı; memory
-search bile çalıştırmadı. ✅ Beş soru küçük bir örneklem, bir benchmark değil; ama sonuç dokümantasyonun anlattığıyla örtüşüyor.
-Nöbetçi ekibinizin her hafta kullandığı iki üç prosedürü, aynı repoda sürümlenen skill'ler olarak tutun; seyrek
-kullanılanları knowledge base'e bırakın. Tek kaynaktan çıkan iki yol bunlar. Skill'i agent üzerinde oluşturduk ✅ (`PUT {endpoint}/api/v2/extendedAgent/skills/<name>` ile 📄);
-skill'leri CI'dan senkronlamak da aynı yaklaşımla yapılır; bu yazıda ele alınmıyor.
-
 ## srectl hakkında bir not
 
 Microsoft'un örnekleri `srectl` adlı bir SRE Agent CLI'ından ve onun `srectl doc upload` komutundan söz ediyor. 📄 Bu
@@ -624,15 +666,31 @@ API'yi kullanıyor.
 | `two or more files share a base name` | Knowledge base düz | Dosyalardan birinin adını değiştirin 📄 |
 | `Agent memory is disabled. Cannot upload documents.` | Agent'ta knowledge kapalı | Agent ayarlarından açın 📄 |
 
+
+## Knowledge'ın ötesi: her hafta kullanılan prosedürler için skill'ler
+
+Knowledge, agent aramaya karar verdiğinde aranır. **Skill** farklıdır: açıklaması agent'ın talimatlarında durur ve görev
+eşleştiğinde agent skill'i kendisi yükler. 📄 Aynı iade prosedürünü, farklı kanaryalarla, iki yere de koyduk ve beş yeni
+sohbette beş farklı ifadeyle sorduk. Agent **beşinde de skill'i** kullandı, knowledge dokümanını hiç kullanmadı; memory
+search bile çalıştırmadı. ✅ Beş soru küçük bir örneklem, bir benchmark değil; ama sonuç dokümantasyonun anlattığıyla örtüşüyor.
+Bu yüzden nöbetçi ekibinizin her hafta kullandığı iki üç prosedürü, aynı repoda sürümlenen skill'ler olarak tutmak daha
+iyi olabilir; gerisi knowledge base'de kalır. Skill'i agent üzerinde oluşturduk ✅ (`PUT {endpoint}/api/v2/extendedAgent/skills/<name>` ile 📄);
+skill'leri CI'dan senkronlamak da aynı yaklaşımla yapılır; bu yazıda ele alınmıyor.
+
 ## Ne öğrendik
 
-- Lab'imizde Code Access ile bağlanan bir repo dosya olarak arandı; knowledge olarak indekslenmedi. CI workflow'u dosyaları
+- SRE Agent'a knowledge bugün dosyaları elle yükleyerek giriyor ve başlangıç için bu yeterli. 📄 Dokümanlar değişmeye
+  başlayınca onların yeri git. GitHub'da onları knowledge yapmanın yerleşik bir yolu yok: bir GitHub reposu yalnızca
+  Code Access ile bağlanıyor. ✅ Azure DevOps'ta yerleşik yol Documentation connector 📄; onu test etmedik.
+- Lab'imizde Code Access ile bağlanan bir repo dosya olarak okunabildi; knowledge olarak indekslenmedi. Pipeline dosyaları
   yükleyene kadar memory search onun için hiçbir şey döndürmedi. ✅
-- Tam bir senkron için public data-plane API yeterli: yükleme, listeleme, silme ve indexer durumu. Ekleme, değişiklik
-  ve silme, merge'den 26 ile 34 saniye sonra agent'a ulaştı. ✅
+- Tam bir senkron için public data-plane API üzerinde kısa bir betik yeterli: yükleme, listeleme, silme ve indexer
+  durumu. Pipeline'dan çalıştırıldığında ekleme, değişiklik ve silme, merge'den 26 ile 34 saniye sonra agent'a ulaştı. ✅
 - Basit bir yükleme döngüsünün atladığı kısım silmedir. Silmeleri git diff'e göre yapın ve sonucu dosya listesinden
   doğrulayın; çünkü silme çağrısı, aslında olmayan bir hata bildirebiliyor. ✅
 - Knowledge base düz. Benzersiz dosya adı bir üslup tercihi değil, kural. 📄
-- CI kimliğine tek bir agent üzerinde tek bir rol yetiyor; secret gerekmiyor: federated credential'lı bir managed
-  identity yeterli. ✅
-- Her hafta kullanılan birkaç prosedürde skill, knowledge base'deki aynı metne beşte beş üstün geldi. ✅
+- Pipeline'ın kimliğine tek bir agent üzerinde tek bir rol yetiyor; secret gerekmiyor: federated credential'lı bir
+  managed identity yeterli. ✅
+
+Dokümanları kendi reposunda tutun, kod gibi review edin ve her merge'ü agent'ın knowledge'ına pipeline taşısın. SRE
+Agent ileride knowledge için yerleşik bir git senkronu getirirse değiştireceğiniz parça betik olur; repo yerinde kalır.

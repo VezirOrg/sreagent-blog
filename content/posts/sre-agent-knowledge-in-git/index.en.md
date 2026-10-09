@@ -1,37 +1,77 @@
 ---
-title: "Keep Azure SRE Agent knowledge in git: one source, two paths"
-description: "Runbooks live in git; a GitHub Actions job pushes every change into the agent's knowledge base through the public data-plane API. Adds, edits and deletes all follow the merge, and the CI identity holds one role on one agent."
+title: "Keep Azure SRE Agent knowledge in git, synced by a script and a pipeline"
+description: "Azure SRE Agent takes knowledge as uploaded files, and a GitHub repository connected through Code Access does not become knowledge. Keep the documents in a GitHub repository of their own; a script pushes them through the public data-plane API, and a pipeline runs it on every merge."
 date: 2026-10-06
 draft: false
 tags: ["azure-sre-agent", "knowledge", "github-actions", "entra-id", "skills"]
 showTableOfContents: true
 ---
 
-Uploading runbooks to Azure SRE Agent by hand works on day one. By day thirty the knowledge base and the runbooks in
-git no longer agree: an edit made in a pull request never reaches the agent, the agent still answers from a retired
-runbook, and nobody can say which version the agent read. We wanted git to be the only place a runbook is written, and the
-agent's knowledge base to follow every merge on its own.
+Azure SRE Agent answers from its knowledge base: the runbooks and guides your team gives it. Today you add them by
+uploading files in the portal (**Builder > Knowledge base > Add file**) or by asking the agent to save one from chat. 📄
+That is the practical way to start: a handful of Markdown files, and the agent can use them.
+
+It stops being enough once the documents change. Runbooks are written by several people, need review and history, and
+must reach the agent the moment they change. A git repository gives you review, history and rollback already, so the
+documents belong in git. Where they can go next depends on where the repository lives:
+
+- **Azure DevOps.** The portal has a **Documentation connector** whose settings point to Azure DevOps ✅, and Learn
+  describes it as crawling an Azure DevOps wiki or Git repository and re-indexing it every 24 hours. 📄 We have not
+  tested it.
+- **GitHub.** There is no built-in way. The documentation describes adding a repository as a knowledge source 📄, but
+  in the portal, as of October 2026, there is no such option: a GitHub repository connects only through **Code
+  Access**. ✅ And the repository we connected through Code Access on 2026-10-06 did not become knowledge: the agent
+  could read it, but memory search found nothing in it. ✅
+
+This post is about the GitHub case. It keeps the documents in a git repository of their own, pushes them into the agent's knowledge base through
+the public data-plane API with a short Python script, and runs that script on every merge from a pipeline (a GitHub
+Actions workflow). Adds, edits and deletes reached the agent 26 to 34 seconds after the merge. ✅
 
 ✅ = proven in our lab · 📄 = documented only (Microsoft Learn, Microsoft's public samples, or the code shown in this post), not tested by us.
 We ran every command in zsh. The PowerShell tabs were not tested on our side; they follow the documentation. 📄
 
 ## Goal and audience
 
-**Goal.** By the end of this post, runbooks live in one folder of a git repository. Every merge to `main` that touches
-`docs/` runs a short GitHub Actions job that uploads new and changed files to the agent's knowledge base and deletes the ones you removed. The job signs
-in with OIDC: no secret is stored anywhere, and its identity can touch one agent and nothing else in Azure.
-The section on skills near the end covers the second of the title's two paths: the few procedures your on-call uses
-every week.
+**Goal.** By the end of this post, your runbooks live in one folder of their own git repository, and that repository is
+the only place they are written. Every merge to `main` that touches `docs/` runs a short GitHub Actions job that uploads
+new and changed files to the agent's knowledge base and deletes the ones you removed. The job signs in with OIDC: no
+secret is stored anywhere, and its identity can touch one agent and nothing else in Azure.
 
 **Audience.** Engineers who run Azure SRE Agent and keep their runbooks, or want to keep them, in GitHub. You should be
 comfortable with `az`, GitHub Actions and Azure role assignments.
 
-## Why not connect the repository and be done
+## Solution at a glance
 
-SRE Agent can also connect a repository through **Code Access**. You might expect this to put the repository's
-documents into the knowledge base, and Microsoft Learn now describes a connected repository as a knowledge source. 📄
-We tested it in a lab on 2026-10-06, with a fresh agent and a private repository carrying unique "canary" strings
-(made-up facts the model cannot know from anywhere else):
+Documents in Azure DevOps: try the Documentation connector first (📄, not tested by us). Documents on GitHub: these four
+steps.
+
+1. **Hand uploads are the start.** Upload a few files in the portal to see the agent use them. 📄
+2. **Git is the source.** Move the documents into a repository of their own, `docs/runbooks/`, changed through pull
+   requests.
+3. **Code Access is not the bridge.** It is the only way to connect a GitHub repository in the portal today ✅, and in our lab
+   it let the agent read the repository but did not put the documents into the knowledge base (next section). ✅
+4. **A script and a pipeline are the bridge.** `tools/sre_kb_sync.py` uploads new and changed files, deletes removed
+   ones and waits for the indexer, through the public data-plane API; a GitHub Actions workflow runs it on every merge. ✅
+
+The [architecture](#architecture) shows the request path; the [steps](#steps) build it.
+
+## Code Access lets the agent read the repository; it does not make it knowledge
+
+Microsoft Learn describes two places to connect a repository: **Builder > Code Access**, which gives the agent code
+search and file reads, and an **Add repository** card under **Builder > Knowledge base**, which connects a repository "so
+your agent can index it as a knowledge source". 📄 In the portal, as of October 2026, there is no such card: a GitHub
+repository connects only through Code Access. ✅ So Code Access is the path that matters, and the one we tested. We connected our
+repository through it, by the agent's API rather than the portal. ✅
+
+"Connecting a repository" can mean two different things:
+
+- **The agent can read the repository.** The repository is cloned into the agent's workspace, and the agent searches
+  the files with its file tools. ✅
+- **The documents are indexed as knowledge.** They are listed in the knowledge base, indexed for semantic search 📄, and
+  memory search finds and cites them ✅ (see [Verification](#verification)). An upload does this.
+
+We tested which one a repository connected through Code Access gets, on 2026-10-06, with a fresh agent and a private repository carrying
+unique "canary" strings (made-up facts the model cannot know from anywhere else):
 
 - Right after the repository was connected, the knowledge base file list was **empty**. The repository was cloned into
   the agent's workspace instead. ✅
@@ -40,8 +80,9 @@ We tested it in a lab on 2026-10-06, with a fresh agent and a private repository
 - When we asked the same question in plain words, it found the answer with **Grep Search** over the cloned files and
   linked the file and line on GitHub. ✅
 
-So in our lab a connected repository was searched as **files**; it was not indexed **as knowledge**. If you want your runbooks in the
-knowledge base, with citations from memory search, something has to upload them. That something is the job below.
+So in our lab a repository connected through Code Access was readable as **files**; its documents were not indexed **as knowledge**. ✅
+If you want your runbooks in the knowledge base, with citations
+from memory search, something has to upload them. That something is the script and the pipeline below.
 
 {{< alert icon="triangle-exclamation" >}}
 If you connect a repository through Code Access anyway, give it a **fine-grained token for that one repository, read-only
@@ -99,19 +140,24 @@ script; (4) try it locally with `--dry-run`; (5) add the workflow that runs it.
 
 ```text
 docs/runbooks/
-  payments/db-failover.md
-  payments/refund-replay.md
-  network/dns-failover.md
-  only-in-repo/...          (excluded through .kbignore)
+  payments-db-failover.md
+  payments-refund-replay.md
+  payments-latency.md
+  storage-latency.md
+  network-dns-failover.md
+  only-in-repo/...          (excluded through .kbignore, never uploaded)
 tools/sre_kb_sync.py
 .kbignore
 .github/workflows/knowledge-sync.yml
 ```
 
-The knowledge base is **flat**: a file is stored under its base name, and uploading a file with an existing name
-replaces the old document. 📄 Two runbooks called `latency.md` in different folders would overwrite each other, so the
-script refuses to run when two files share a base name. 📄 (the script below; we did not trigger it) Give runbooks names that are unique across the folder
-(`payments-latency.md`, `storage-latency.md`).
+Why `payments-latency.md` and `storage-latency.md` sit side by side instead of in `payments/` and `storage/` folders:
+the knowledge base keeps only the file name. Learn describes it for uploads from a folder: the folder hierarchy is not
+kept (`runbooks/networking/dns-troubleshooting.md` appears as `dns-troubleshooting.md`), and uploading a file with an
+existing name replaces the old document. 📄 So `payments/latency.md` and `storage/latency.md` would both become
+`latency.md`, and the second upload would replace the first. The sync script sends only the file name and refuses to run
+when two files share one. 📄 (the script below; we did not trigger it) Give every runbook a name that is unique across
+the whole folder. A folder is fine for files that never reach the knowledge base, such as `only-in-repo/`.
 
 `.kbignore` lists path prefixes that stay in git but never reach the knowledge base, one per line:
 
@@ -200,9 +246,12 @@ ENDPOINT=$(az resource show \
   --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv)
 TOKEN=$(az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv)
 curl -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TOKEN" \
-  -F "files=@docs/runbooks/payments/db-failover.md" -F "files=@docs/runbooks/network/dns-failover.md"
+  -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
 curl "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
 ```
+
+The paths follow the layout in step 1; our demo ran this snippet with the old subfolder paths
+(`payments/db-failover.md`, `network/dns-failover.md`).
 
 That is enough for one upload. It does not remove a runbook you deleted, and it does not stop two files with the same
 name from overwriting each other. `tools/sre_kb_sync.py` is the same four calls, extended:
@@ -494,7 +543,9 @@ python tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <
 ```
 
 The sample shows the repository before the Verification tests below: it still held `payments/api/latency.md`, which
-the Delete test removed, and not yet `network/dns-failover.md`, which the Add test created. ✅
+the Delete test removed, and not yet `network/dns-failover.md`, which the Add test created. ✅ Our demo repository still
+used subfolders (each file name unique), so the paths in this sample and in the Verification table are the recorded
+ones and differ from the layout in step 1.
 
 For a real run (without `--dry-run`), your own account needs SRE Agent Administrator on the agent ✅, and read access to
 the agent resource if you resolve the endpoint from ARM. 📄
@@ -591,18 +642,6 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } -Uri "$ENDPOINT/
 In the portal the same files appear under **Builder > Knowledge base** with status **Indexed**. 📄 In chat, a tool card
 reads `Memory Search: Found 1 relevant results` and the answer names the document. ✅
 
-## Frequently used procedures: make them skills
-
-Knowledge is searched when the agent decides to search. A **skill** is different: its description sits in the agent's
-instructions and the agent loads the skill itself when the task matches. 📄 We put the same refund procedure in both
-places, with different canaries, and asked five differently worded questions in five new chats. The agent used the
-**skill all five times** and the knowledge document never; it did not even run a memory search. ✅ Five questions are a
-small sample, not a benchmark, but the result matches what the documentation describes. Keep the two or three
-procedures your on-call uses every week as skills, versioned in the same repository, and leave the rarely used rest in
-the knowledge base.
-Those are the two paths from one source. We created the skill on the agent ✅, through `PUT {endpoint}/api/v2/extendedAgent/skills/<name>` 📄;
-syncing skills from CI follows the same pattern and is not covered here.
-
 ## A note on srectl
 
 Microsoft's samples mention an SRE Agent CLI, `srectl`, including a `srectl doc upload` command. 📄 It is not publicly
@@ -620,14 +659,33 @@ released yet, so this post uses only the public data-plane API, which anyone can
 | `two or more files share a base name` | The knowledge base is flat | Rename one file 📄 |
 | `Agent memory is disabled. Cannot upload documents.` | Knowledge is turned off on the agent | Turn it on in the agent settings 📄 |
 
+
+## Beyond knowledge: skills for weekly procedures
+
+Knowledge is searched when the agent decides to search. A **skill** is different: its description sits in the agent's
+instructions and the agent loads the skill itself when the task matches. 📄 We put the same refund procedure in both
+places, with different canaries, and asked five differently worded questions in five new chats. The agent used the
+**skill all five times** and the knowledge document never; it did not even run a memory search. ✅ Five questions are a
+small sample, not a benchmark, but the result matches what the documentation describes. So the two or three
+procedures your on-call uses every week may be better kept as skills, versioned in the same repository; the rest stays
+in the knowledge base. We created the skill on the agent ✅, through `PUT {endpoint}/api/v2/extendedAgent/skills/<name>` 📄;
+syncing skills from CI follows the same pattern and is not covered here.
+
 ## What we learned
 
-- In our lab, a repository connected through Code Access was searched as files; it was not indexed as knowledge. Memory search
-  returned nothing for it until the CI job uploaded the files. ✅
-- The public data-plane API is enough for a full sync: upload, list, delete and indexer status. Adds, edits and deletes
-  all reached the agent 26 to 34 seconds after the merge. ✅
+- Uploading files by hand is how knowledge gets into SRE Agent today, and it is fine for a start. 📄 Once the
+  documents change, git is the better home for them. On GitHub there is no built-in way to make them knowledge: a
+  GitHub repository connects only through Code Access. ✅ On Azure DevOps, the Documentation connector is the built-in
+  path 📄; we have not tested it.
+- In our lab, a repository connected through Code Access was readable as files; it was not indexed as knowledge.
+  Memory search returned nothing for it until the pipeline uploaded the files. ✅
+- A short script on the public data-plane API is enough for a full sync: upload, list, delete and indexer status.
+  Run from a pipeline, adds, edits and deletes reached the agent 26 to 34 seconds after the merge. ✅
 - Deletes are the part a plain upload loop forgets. Drive them from the git diff, and verify against the file list,
   because the delete call itself can report a failure that did not happen. ✅
 - The knowledge base is flat. Unique file names are a rule, not a style choice. 📄
-- The CI identity needs one role on one agent and no secret: a managed identity with a federated credential. ✅
-- For the few procedures used every week, a skill beat the same text in the knowledge base five times out of five. ✅
+- The pipeline's identity needs one role on one agent and no secret: a managed identity with a federated credential. ✅
+
+Keep the documents in their own repository, review them like code, and let the pipeline carry every merge into the
+agent's knowledge. If SRE Agent gets a built-in git sync for knowledge later, the script is the part you replace; the
+repository stays.
