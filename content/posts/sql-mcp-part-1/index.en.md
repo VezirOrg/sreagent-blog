@@ -11,16 +11,16 @@ showTableOfContents: true
 
 We wanted Azure SRE Agent to answer "what is the top wait on sql02?" and "how many user sessions are there right now?"
 without ever handing it a SQL prompt. No `sysadmin` for the agent's identity, no free-form query, no helper database on
-the SQL Servers, and no public endpoint. This post is how we built that with **Data API builder (DAB) 2.1.5** and its
+the SQL Servers, and no public endpoint. This post shows how we built that with **Data API builder (DAB) 2.1.5** and its
 MCP endpoint, and what broke along the way.
 
-✅ = proven in our lab · 📄 = documented only (Microsoft Learn or DAB source code), not tested by us.
+✅ = proven in our lab · 📄 = documented only (Microsoft Learn, DAB source code or the portal's code), not tested by us.
 
 ## Goal and audience
 
 **Goal.** At the end, the agent reads seven SQL Server DMV views (waits, counters, memory, sessions, requests, query
-stats) on every server you list, through an MCP connector that authenticates with the agent's own managed identity and
-travels over your VNet. SQL Server sees a single low-privilege gMSA over Kerberos. Nothing is created on SQL beyond a
+stats) on every server you list, through an MCP connector that signs in with the agent's own managed identity and
+sends its traffic over your VNet. SQL Server sees a single low-privilege gMSA over Kerberos. Nothing is created on SQL beyond a
 login.
 
 **Audience.** Azure and SQL Server engineers who run SRE Agent, or are about to, and want it to see database health.
@@ -29,8 +29,8 @@ You should be comfortable with Active Directory (gMSA), T-SQL logins, Entra app 
 ## How it fits together
 
 DAB is Microsoft's open-source engine that serves database objects listed in a JSON config as an API. We use only its
-**MCP endpoint** (`/mcp`, Streamable HTTP); REST and GraphQL are off. DAB has no SQL of its own: every tool call becomes a
-`SELECT` on a view you configured. ✅
+**MCP endpoint** (`/mcp`, Streamable HTTP); REST and GraphQL are off. The caller never sends SQL: its tools can only read
+the views you configured. ✅
 
 {{< mermaid >}}
 flowchart LR
@@ -54,10 +54,11 @@ flowchart LR
    role `MCP.Read` get one: the app requires assignment. ✅
 2. The connector calls `http://mcp01.contoso.local:5000/mcp` over the VNet, with the token and the header
    `X-MS-API-ROLE: MCP.Read`. ✅
-3. DAB checks `aud`, `iss` and the signature (keys fetched from Entra over outbound 443) and the role. ✅
-4. DAB connects to SQL Server as the **gMSA** over Kerberos. It does not pass the caller on. ✅
+3. DAB checks the token's audience and the role. ✅ It also checks the issuer and the signature, with signing keys
+   fetched from Entra over outbound 443. 📄 ([DAB source](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/AuthenticationHelpers/ConfigureJwtBearerOptions.cs#L49-L67))
+4. DAB connects to SQL Server as the **gMSA** over Kerberos. It does not pass the caller's identity on. ✅
 
-**What the agent gets** is three read-only tools: `describe_entities` (what exists, with column descriptions),
+**The agent gets** three read-only tools: `describe_entities` (what exists, with column descriptions),
 `read_records` (filter, order, select, first) and `aggregate_records` (count, sum, avg, min, max, group by). There is
 no "run a query" tool. ✅
 
@@ -68,17 +69,28 @@ no "run a query" tool. ✅
 | SRE Agent | Egress mode **Azure VNet**, private DNS resolution on | ✅ |
 | | **Remote MCP server access = off** (keeps MCP traffic in your VNet) | ✅ |
 | | System-assigned managed identity (a user-assigned one also works) | ✅ / 📄 |
-| Active Directory | A domain with a KDS root key; Domain Admin for the gMSA | ✅ |
-| MCP host | Windows Server domain member, no public IP. Outbound **TCP 443 to Entra** for token signing keys. No inbound internet | ✅ |
+| Active Directory | A domain with a KDS root key | ✅ |
+| | Domain Admins or Enterprise Admins membership to create the KDS root key and the gMSA | 📄 |
+| MCP host | Windows Server domain member, no public IP. No inbound internet | ✅ |
+| | Outbound **TCP 443 to Entra** for token signing keys | 📄 ([DAB source](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/AuthenticationHelpers/ConfigureJwtBearerOptions.cs#L49-L67)) |
 | SQL Server | **2022 or later** for `##MS_ServerPerformanceStateReader##` (we ran 2025). 2016–2019 need `VIEW SERVER STATE` | ✅ 2025 / 📄 older |
 | Network | Agent subnet → MCP host TCP 5000; the host name resolves from the agent subnet | ✅ |
-| Entra | Someone who can create an app registration and assign an app role | ✅ |
+| Entra | Someone who can create an app registration and assign its app role to a managed identity | 📄 |
 | Admin machine | Azure CLI, signed in. zsh or PowerShell | ✅ zsh / 📄 PowerShell |
 
 HTTPS is not required: the connector accepts `http://` inside the VNet. ✅ On-premises SQL Servers work the same way
 over VPN or ExpressRoute, as long as the agent subnet can reach the host. 📄
 
 ## Steps
+
+The setup takes six steps:
+
+1. Create the gMSA on a domain controller.
+2. Give it a login and the performance role on each SQL Server.
+3. Install DAB on the MCP host and register the scheduled task that runs it.
+4. Write the DAB configuration: a root file and one file per SQL Server.
+5. Create the Entra app and assign its role to the agent's managed identity.
+6. Keep MCP traffic in the VNet, then add the connector.
 
 Commands for the admin machine come in two tabs. Pick your shell once; every block on the page follows. Commands that
 run on a Windows server or in SQL appear once.
@@ -103,11 +115,10 @@ SELECT IS_SRVROLEMEMBER('sysadmin', N'CONTOSO\gmsa-dab$') AS is_sysadmin;   -- e
 The gMSA is not sysadmin; it gets only the `##MS_ServerPerformanceStateReader##` role (on SQL Server 2016–2019,
 `VIEW SERVER STATE` instead).
 
-`##MS_ServerPerformanceStateReader##` is `VIEW SERVER PERFORMANCE STATE`: performance DMVs, nothing else. No table
-data, no security DMVs, no way to change anything. No database user is created. ✅
+`##MS_ServerPerformanceStateReader##` grants `VIEW SERVER PERFORMANCE STATE`: performance DMVs, no table data, no
+security DMVs, no way to change anything. 📄 We created only the login and its role membership: no database user. ✅
 
-On 2016–2019 use `GRANT VIEW SERVER STATE` instead. It is broader (it includes security-related state and other
-sessions' query text). 📄
+On 2016–2019 use `GRANT VIEW SERVER STATE` instead. That permission is broader (it also covers security-related state). 📄
 
 {{< alert icon="circle-info" >}}
 **Without the grant, two views lie instead of failing.** `sys.dm_exec_sessions` and `sys.dm_exec_requests` then return
@@ -125,12 +136,12 @@ Test-ADServiceAccount gmsa-dab                       # True
 
 Then, on the same host:
 
-1. Grant the gMSA **Log on as a batch job** (a scheduled task needs it).
-2. Unpack the self-contained `dab_net10.0_win-x64-2.1.5.zip` from the DAB GitHub release into `C:\dab\bin`. No .NET
-   install is needed. `C:\dab\bin\Microsoft.DataApiBuilder.exe --version` prints `2.1.5`. **Pin the version**: 2.1.5
-   introduced `allowed-hosts`.
+1. Grant the gMSA **Log on as a batch job** (the scheduled task needs it).
+2. Unpack the self-contained `dab_net10.0_win-x64-2.1.5.zip` from the DAB 2.1.5 release on GitHub into `C:\dab\bin`.
+   No .NET install is needed. `C:\dab\bin\Microsoft.DataApiBuilder.exe --version` prints `2.1.5`. **Pin the version**:
+   everything here was tested with 2.1.5, including `allowed-hosts` below. ✅
 3. Create `C:\dab\config` (gMSA: read) and `C:\dab\logs` (gMSA: modify).
-4. Register the scheduled task that *is* the service (DAB is not a Windows service):
+4. Register the scheduled task that acts as DAB's service (DAB is not a Windows service):
 
 ```powershell
 $cmd = '/c set ASPNETCORE_URLS=http://0.0.0.0:5000&& C:\dab\bin\Microsoft.DataApiBuilder.exe start --config dab-config.json > C:\dab\logs\dab.log 2>&1'
@@ -150,7 +161,7 @@ New-NetFirewallRule -Name dab-mcp-5000 -DisplayName 'DAB MCP 5000 (VNet only)' -
 
 ### 4. Write the DAB configuration
 
-The layout matters more than it looks; the [findings](#finding-2) explain why.
+The layout matters more than it looks; [Finding 2](#finding-2) explains why.
 
 - **`dab-config.json`, the root**: the runtime, a list of per-server files, and a **placeholder** data source.
 - **One file per SQL Server** (`sql01.json`, `sql02.json`): its connection string and its entities.
@@ -233,14 +244,16 @@ Rules we learned the hard way:
   `is_user_process`; with the column described it answered 2, which was right. ✅
 - **No `anonymous` role.** Every entity is readable only by `MCP.Read`. ✅
 - **Cache off** everywhere: these are live DMVs. ✅
-- **Add entities one at a time** and watch the log. One bad entity stops the whole of DAB. ✅
+- **Add entities one at a time** and watch the log. One bad entity stops all of DAB. ✅
 
-Start it: `Start-ScheduledTask DAB-MCP`, then `Get-NetTCPConnection -LocalPort 5000 -State Listen` shows `0.0.0.0`.
+Start it with `Start-ScheduledTask DAB-MCP`, then check that `Get-NetTCPConnection -LocalPort 5000 -State Listen` shows
+`0.0.0.0`.
 
 ### 5. Create the Entra app and give the agent its role (admin machine)
 
-App registration `sql-mcp-api` with identifier URI `api://<appId>`, **v2 tokens**, one app role `MCP.Read` for
-applications, assignment **required**, and the role assigned to the agent's managed identity. The block is idempotent.
+The block below creates the app registration `sql-mcp-api` with identifier URI `api://<appId>`, **v2 tokens** and one app
+role `MCP.Read` for applications, makes assignment **required**, and assigns the role to the agent's managed identity.
+It is idempotent: you can run it again.
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -291,14 +304,16 @@ az rest -m POST --url "https://graph.microsoft.com/v1.0/servicePrincipals/$SPID/
 {{< /tab >}}
 {{< /tabs >}}
 
-Two traps: `az ad app update --set api…` fails ("Couldn't find 'api'"), hence the Graph PATCH. And an app role id
-cannot be replaced once it exists, hence the reuse. ✅ Assign the role **before** the agent first asks for a token:
-managed-identity tokens are cached for up to about 24 hours, and an early one has no `roles` claim. 📄
+Two traps: `az ad app update --set api…` fails ("Couldn't find 'api'"), which is why the block uses a Graph PATCH. And
+an app role id cannot be replaced once it exists, which is why the block reuses an existing role. ✅ Assign the role
+**before** the agent first asks for a token: managed-identity tokens are cached for up to about 24 hours, and a token
+issued before the assignment has no `roles` claim. 📄
 
 ### 6. Keep MCP traffic in the VNet, then add the connector (admin machine)
 
-"Remote MCP server access" **off** means MCP traffic goes through your VNet. On, it goes through Microsoft's network
-to the internet, which cannot reach a private host. Send the whole `egress` object. ✅
+With "Remote MCP server access" **off**, MCP traffic goes through your VNet. ✅ With it on, MCP traffic goes through
+Microsoft's network to the internet, and from there it cannot reach a private host. 📄 We ran only the "off" setting,
+sending the whole `egress` object as below. ✅
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -325,7 +340,7 @@ Now the connector. In the portal: **Builder → Connectors → Add connector →
 `api://<appId>/.default`, custom header `X-MS-API-ROLE` = `MCP.Read`, then select the three tools. 📄 (the portal path;
 we ran the ARM call below ✅)
 
-`connector.json` holds no secret. Tool names are prefixed with the connector name:
+`connector.json` holds no secret. Tool names get the connector name as a prefix (here `dmv_`):
 
 ```json
 {"properties":{"dataConnectorType":"Mcp","dataSource":"placeholder","identity":"system",
@@ -351,12 +366,14 @@ az rest -m PUT --url "https://management.azure.com${AGENT}/connectors/dmv?api-ve
 {{< /tab >}}
 {{< /tabs >}}
 
-`authType: AzureARM` is what the portal's "Managed identity" option writes, and custom headers are flat keys in
-`extendedProperties`. A `GET` afterwards shows `endpoint`, `armScope` and the header as `null`; they are write-only. ✅
+We read in the portal's code that its "Managed identity" option writes `authType: AzureARM`; we did not create a
+connector in the portal. 📄 The connector above, created through ARM with `AzureARM` and the header as a flat key in
+`extendedProperties`, worked. A `GET` afterwards shows `endpoint`, `armScope` and the header as `null`; they are
+write-only. ✅
 
 ## Verification
 
-**On SQL (check as a DBA)**: DAB's session is the gMSA, over Kerberos, and not sysadmin. ✅
+**On SQL (a DBA runs this check)**: DAB's session runs as the gMSA, over Kerberos, and is not sysadmin. ✅
 
 ```sql
 SELECT s.login_name, c.auth_scheme, IS_SRVROLEMEMBER('sysadmin', s.login_name) AS is_sysadmin
@@ -401,8 +418,8 @@ Healthy servers go down with it. ✅
   4294967295, level Information). Only `Start-ScheduledTask DAB-MCP` brings it back. ✅
 - The task redirects with `>`, so **every start overwrites `dab.log`**. Read it before you restart. ✅
 - The Application log gets `.NET Runtime` 1000 "Hosting failed to start", which names no server. ✅
-- If a server dies **while DAB runs**, only its own entities fail (the first call after about 15 s, the connect
-  timeout), and they recover on their own when it returns. ✅
+- If a server dies **while DAB runs**, only its own entities fail (the first call fails after about 15 s, the
+  connect timeout), and they recover on their own when it returns. ✅
 
 {{< alert icon="triangle-exclamation" >}}
 **Monitor the listener, not the task.** After patching a SQL Server or rebooting the MCP host, check that something
@@ -413,18 +430,14 @@ harmless. Restart DAB only when all of its SQL Servers are up.
 ### Finding 2: the `.off` workaround {#finding-2}
 
 DAB 2.1.5 has **no `enabled` flag** for a data source or an entity. We tried the obvious switches on a copy of the
-config, with one server pointing at a name that does not exist:
-
-| Attempt | Result |
-|---|---|
-| `"mcp": false` on every entity of the dead server | DAB still fails at startup ✅ |
-| plus `health.enabled: false` on its data source | still fails ✅ |
-| rename `sql02.json` to `sql02.json.off` | **starts, with sql01's 7 entities** ✅ |
+config, with one server pointing at a name that does not exist. `"mcp": false` on its entities and
+`health.enabled: false` on its data source did not help; renaming its file to `.off` did. ✅ (The attempts are in the
+[appendix](#appendix).)
 
 The reason is in DAB's loader: a file listed in `data-source-files` that **does not exist on disk is skipped
-silently**. 📄 (source) ✅ (behaviour). That is why each server gets its own file, including the first one, and why the root
+silently**. 📄 ([DAB source](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Config/ObjectModel/RuntimeConfig.cs#L389-L429)) ✅ (behaviour). That is why each server gets its own file, including the first one, and why the root
 holds only a **placeholder** data source: DAB 2.1.5 refuses a root without one ("Invalid connection-string"), and with an
-unresolvable name and zero entities it is never contacted. ✅ Re-test that after every DAB upgrade; a later version might
+unresolvable name and zero entities it did not stop DAB from starting. ✅ Re-test that after every DAB upgrade; a later version might
 contact it. 📄
 
 Taking a server out, on the host:
@@ -437,7 +450,7 @@ Start-ScheduledTask DAB-MCP; Start-Sleep 15
 [bool](Get-NetTCPConnection -LocalPort 5000 -State Listen -EA SilentlyContinue)   # True = DAB is up
 ```
 
-Or from the admin machine, for an Azure VM, through the VM agent (no SSH). 📄 (not run)
+Or from the admin machine, for an Azure VM, through the VM agent (no remote session needed). 📄 (not run)
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -455,8 +468,8 @@ az vm run-command invoke -g <rg> -n mcp01 --command-id RunPowerShellScript --scr
 {{< /tab >}}
 {{< /tabs >}}
 
-Put it back by swapping the two names and restarting. Because the skip is silent, a typo in `data-source-files` also
-drops a server quietly. Count what DAB will load after every change, and alert when the number is below 7 × servers:
+To put it back, rename the file back and restart. Because the skip is silent, a typo in `data-source-files` also
+drops a server quietly. Count what DAB will load after every change, and alert when the number is below 7 × the number of servers:
 
 ```powershell
 $c = 'C:\dab\config'; $root = Get-Content "$c\dab-config.json" -Raw | ConvertFrom-Json
@@ -478,7 +491,7 @@ The natural next question was "what is MAXDOP on sql01?". DAB cannot answer it w
 - `sys.configurations`, `sys.database_scoped_configurations` and `sys.dm_server_registry` have **`sql_variant`**
   columns. DAB reads a view's schema with `SELECT *` and builds its filter model over every column, not just the ones in
   `fields`. `sql_variant` has no mapping, so **DAB fails at startup**, and leaving the column out of `fields` does not
-  help. 📄 (DAB source; column types checked ✅)
+  help. 📄 ([DAB source](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/Services/TypeHelper.cs#L287-L305))
 - `SERVERPROPERTY()` and `@@VERSION` are functions. DAB exposes tables, views and stored procedures only. We tried the
   DMV functions (`dm_exec_sql_text`, `dm_db_index_physical_stats`, `dm_io_virtual_file_stats`): DAB fails to start
   with SQL error 216 ("parameters were not supplied"). ✅
@@ -488,20 +501,16 @@ The natural next question was "what is MAXDOP on sql01?". DAB cannot answer it w
 ### Finding 4: scale is not the limit, failure coupling is
 
 We loaded one DAB with up to 50 data sources, seven entities each, and measured. The data sources were aliases of our two real servers. ✅
-
-| Servers | Listener up / first read | Memory (working set) | `describe_entities` full / `nameOnly` / one entity |
-|---|---|---|---|
-| 2 | 2.1 s / 4.9 s | 132 MB | 74 KB / 2.3 KB / 1.5 KB |
-| 10 | 2.4 s / 5.2 s | 152 MB | 368 KB / 11 KB / 1.5 KB |
-| 25 | 3.5 s / 6.2 s | 161 MB | 921 KB / 27 KB / 1.5 KB |
-| 50 | 5.2 s / 8.0 s | 176 MB | 1.8 MB / 54 KB / 1.5 KB |
+At 50 servers DAB listened after 5.2 s, used 176 MB and answered a full `describe_entities` with 1.8 MB; one entity
+stayed at 1.5 KB. ✅ (The full table is in the [appendix](#appendix).)
 
 At 25 servers the agent found the right entity for "top wait on sql17" and "user sessions on sql22" by itself: it
-called `describe_entities` with `nameOnly` first (18 KB), then one entity, and the session count matched `sqlcmd`. It
-never pulled the 921 KB full description. ✅
+called `describe_entities` with `nameOnly` first, then one entity, and the session count matched `sqlcmd`. Its
+`nameOnly` call returned 18 KB; the 27 KB in the appendix table is what our own script measured calling DAB directly.
+It never pulled the 921 KB full description. ✅
 
 So group servers per DAB by **failure domain and maintenance window**, not by count, and keep each group at **25 or
-fewer** (what we tested). Network latency and connection pools with 25 distinct servers were not measured. 📄
+fewer** (the largest group we tested with the agent). Network latency and connection pools with 25 distinct servers were not measured. 📄
 
 ## Troubleshooting
 
@@ -524,11 +533,30 @@ fewer** (what we tested). Network latency and connection pools with 25 distinct 
 2. **A gMSA plus `##MS_ServerPerformanceStateReader##` is enough.** One login, Kerberos, no database user,
    the gMSA is not sysadmin.
 3. **Managed identity end to end, no secret anywhere.** The agent's MI gets the token, the app role gates it, DAB
-   validates it. A static bearer token also works, and expires in a day.
-4. **One unreachable server at startup takes every server down, and nobody restarts it.** Watch the listener from
+   validates it. A static bearer token also works, but expires in a day. ✅
+4. **One unreachable server at startup takes every server down, and nothing restarts DAB.** Watch the listener from
    outside; Task Scheduler reports success.
 5. **There is no disable switch, but a missing file is skipped.** One file per server and a placeholder root turn that
    into a clean, silent `.off` switch. Count the entities to make it loud.
 6. **Describe your columns.** The agent answered "72 user sessions" until `is_user_process` had a description.
 
-**Next in the series:** monitoring this setup: alerting on the failure signals above without trusting the task state.
+**Next in the series:** monitoring this setup, with alerts on the failure signals above that do not trust the task state.
+
+## Appendix: lab measurements {#appendix}
+
+Finding 2, switching off a server whose name does not resolve, on a copy of the config:
+
+| Attempt | Result |
+|---|---|
+| `"mcp": false` on every entity of the dead server | DAB still failed at startup ✅ |
+| plus `health.enabled: false` on its data source | still failed ✅ |
+| rename `sql02.json` to `sql02.json.off` | **started, with sql01's 7 entities** ✅ |
+
+Finding 4, one DAB with N data sources of seven entities each, measured by our own script calling DAB directly:
+
+| Servers | Listener up / first read | Memory (working set) | `describe_entities` full / `nameOnly` / one entity |
+|---|---|---|---|
+| 2 | 2.1 s / 4.9 s | 132 MB | 74 KB / 2.3 KB / 1.5 KB |
+| 10 | 2.4 s / 5.2 s | 152 MB | 368 KB / 11 KB / 1.5 KB |
+| 25 | 3.5 s / 6.2 s | 161 MB | 921 KB / 27 KB / 1.5 KB |
+| 50 | 5.2 s / 8.0 s | 176 MB | 1.8 MB / 54 KB / 1.5 KB |

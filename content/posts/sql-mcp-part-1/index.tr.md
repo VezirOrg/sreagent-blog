@@ -11,17 +11,17 @@ showTableOfContents: true
 
 Azure SRE Agent'ın "sql02'de en çok hangi wait var?" ve "şu an kaç kullanıcı oturumu açık?" sorularını, eline hiçbir
 zaman bir SQL komut satırı vermeden cevaplamasını istedik. Agent'ın kimliğine `sysadmin` yok, serbest sorgu yok, SQL
-Server'larda yardımcı veritabanı yok, genel uç nokta yok. Bu yazı bunu **Data API builder (DAB) 2.1.5** ve onun MCP uç
-noktasıyla nasıl kurduğumuzu ve yolda neyin kırıldığını anlatıyor.
+Server'larda yardımcı veritabanı yok, public endpoint yok. Bu yazıda bunu **Data API builder (DAB) 2.1.5** ve MCP uç
+noktasıyla nasıl kurduğumuzu ve yolda nelerin bozulduğunu anlatıyoruz.
 
-✅ = lab'imizde kanıtlandı · 📄 = yalnız belgede var (Microsoft Learn ya da DAB kaynak kodu), bizde test edilmedi.
+✅ = lab'imizde kanıtlandı · 📄 = yalnızca belgelenmiş (Microsoft Learn, DAB kaynak kodu ya da portalın kodu), biz test etmedik.
 
 ## Amaç ve hedef kitle
 
-**Amaç.** Sonunda agent, listelediğiniz her sunucuda yedi SQL Server DMV view'ını (wait'ler, sayaçlar, bellek,
-oturumlar, istekler, sorgu istatistikleri) okuyor. Bunu, agent'ın kendi managed identity'siyle kimlik doğrulayan ve
-VNet'inizin içinden geçen bir MCP connector'ı üzerinden yapıyor. SQL Server tarafında yalnızca düşük yetkili tek bir gMSA,
-Kerberos ile görünüyor. SQL'de bir login dışında hiçbir şey oluşturulmuyor.
+**Amaç.** Yazının sonunda agent, listelediğiniz her sunucuda yedi SQL Server DMV view'ını (wait'ler, sayaçlar, bellek,
+oturumlar, istekler, sorgu istatistikleri) okuyabilir. Bunu, agent'ın kendi managed identity'siyle kimlik doğrulayan ve
+trafiği VNet'inizden geçen bir MCP connector'ı üzerinden yapar. SQL Server tarafında yalnızca düşük yetkili tek bir gMSA
+görünür; bağlantı Kerberos ile kurulur. SQL'de bir login dışında hiçbir şey oluşturulmuyor.
 
 **Kimler için.** SRE Agent kullanan ya da kullanmak üzere olan ve veritabanı sağlığını ona göstermek isteyen Azure ve
 SQL Server mühendisleri. Active Directory (gMSA), T-SQL login'leri, Entra uygulama kayıtları ve `az rest` size yabancı
@@ -29,16 +29,16 @@ olmamalı.
 
 ## Parçalar nasıl birleşiyor
 
-DAB, JSON config'te listelenen veritabanı nesnelerini API olarak sunan, Microsoft'un açık kaynak motorudur. Biz yalnız
-**MCP uç noktasını** kullanıyoruz (`/mcp`, Streamable HTTP); REST ve GraphQL kapalı. DAB'ın kendine ait SQL'i yoktur: her
-araç çağrısı, sizin tanımladığınız bir view üzerinde bir `SELECT`'e dönüşür. ✅
+DAB, JSON config'te listelenen veritabanı nesnelerini API olarak sunan, Microsoft'un açık kaynak motorudur. Biz yalnızca
+**MCP uç noktasını** kullanıyoruz (`/mcp`, Streamable HTTP); REST ve GraphQL kapalı. Çağıran taraf hiç SQL göndermez: araçları
+yalnızca sizin tanımladığınız view'ları okuyabilir. ✅
 
 {{< mermaid >}}
 flowchart LR
-  subgraph AZ["Azure VNet (genel uç nokta yok)"]
+  subgraph AZ["Azure VNet (public endpoint yok)"]
     AG["Azure SRE Agent<br/>system-assigned MI"]
     subgraph HOST["mcp01 (domain üyesi)"]
-      DAB["DAB 2.1.5 /mcp<br/>gMSA ile zamanlanmış görev"]
+      DAB["DAB 2.1.5 /mcp<br/>gMSA ile scheduled task"]
     end
   end
   ENTRA["Entra ID<br/>uygulama sql-mcp-api, rol MCP.Read"]
@@ -51,14 +51,15 @@ flowchart LR
   DAB -- "4" --> SQL2
 {{< /mermaid >}}
 
-1. Agent, **managed identity**'siyle Entra'dan `api://<appId>` için token ister. Token'ı yalnız `MCP.Read` uygulama
-   rolüne sahip kimlikler alır: uygulama atama zorunlu tutar. ✅
+1. Agent, **managed identity**'siyle Entra'dan `api://<appId>` için token ister. Token'ı yalnızca `MCP.Read` uygulama
+   rolüne sahip kimlikler alır: uygulamada atama zorunludur. ✅
 2. Connector, token ve `X-MS-API-ROLE: MCP.Read` başlığıyla VNet üzerinden `http://mcp01.contoso.local:5000/mcp`
    adresini çağırır. ✅
-3. DAB `aud`, `iss` ve imzayı (anahtarlar Entra'dan giden 443 ile alınır) ve rolü kontrol eder. ✅
+3. DAB, token'ın audience'ını ve rolü kontrol eder. ✅ Issuer'ı ve imzayı da kontrol eder; imza anahtarlarını Entra'dan
+   giden 443 üzerinden alır. 📄 ([DAB kaynak kodu](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/AuthenticationHelpers/ConfigureJwtBearerOptions.cs#L49-L67))
 4. DAB, SQL Server'a **gMSA** olarak Kerberos ile bağlanır. Çağıranın kimliğini aktarmaz. ✅
 
-**Agent'ın eline geçen**, salt okunur üç araçtır: `describe_entities` (ne var, kolon açıklamalarıyla), `read_records`
+**Agent'ın kullanabildiği** salt okunur üç araç var: `describe_entities` (ne var, kolon açıklamalarıyla), `read_records`
 (filtre, sıralama, kolon seçimi, ilk N) ve `aggregate_records` (count, sum, avg, min, max, group by). "Sorgu çalıştır"
 diye bir araç yoktur. ✅
 
@@ -66,14 +67,16 @@ diye bir araç yoktur. ✅
 
 | Alan | Gereksinim | |
 |---|---|---|
-| SRE Agent | Egress modu **Azure VNet**, özel DNS çözümlemesi açık | ✅ |
+| SRE Agent | Egress modu **Azure VNet**, private DNS çözümlemesi açık | ✅ |
 | | **Remote MCP server access = kapalı** (MCP trafiğini VNet'inizde tutar) | ✅ |
 | | System-assigned managed identity (user-assigned da olur) | ✅ / 📄 |
-| Active Directory | KDS root key'i olan bir domain; gMSA için Domain Admin | ✅ |
-| MCP host'u | Domain üyesi Windows Server, genel IP yok. Token imza anahtarları için Entra'ya **giden TCP 443**. İnternetten gelen trafik yok | ✅ |
-| SQL Server | `##MS_ServerPerformanceStateReader##` için **2022 ve sonrası** (biz 2025 ile çalıştık). 2016–2019 için `VIEW SERVER STATE` gerekir | ✅ 2025 / 📄 eskiler |
-| Ağ | Agent alt ağı → MCP host'u TCP 5000; host adı agent alt ağından çözülebilir | ✅ |
-| Entra | Uygulama kaydı oluşturup uygulama rolü atayabilen biri | ✅ |
+| Active Directory | KDS root key'i olan bir domain | ✅ |
+| | KDS root key'i ve gMSA'yı oluşturmak için Domain Admins ya da Enterprise Admins üyeliği | 📄 |
+| MCP host'u | Domain üyesi Windows Server, public IP yok. İnternetten gelen trafik yok | ✅ |
+| | Token imza anahtarları için Entra'ya **giden TCP 443** | 📄 ([DAB kaynak kodu](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/AuthenticationHelpers/ConfigureJwtBearerOptions.cs#L49-L67)) |
+| SQL Server | `##MS_ServerPerformanceStateReader##` için **2022 ve sonrası** (biz 2025 kullandık). 2016–2019 için `VIEW SERVER STATE` gerekir | ✅ 2025 / 📄 eskiler |
+| Ağ | Agent alt ağı → MCP host'u TCP 5000; host adı agent alt ağından çözülebilmeli | ✅ |
+| Entra | Uygulama kaydı oluşturup uygulama rolünü bir managed identity'ye atayabilen biri | 📄 |
 | Admin makinesi | Oturum açılmış Azure CLI. zsh ya da PowerShell | ✅ zsh / 📄 PowerShell |
 
 HTTPS şart değil: connector VNet içinde `http://` kabul ediyor. ✅ Şirket içi SQL Server'lar da VPN ya da ExpressRoute
@@ -81,8 +84,17 @@ HTTPS şart değil: connector VNet içinde `http://` kabul ediyor. ✅ Şirket i
 
 ## Adımlar
 
-Admin makinesinde çalışan komutlar iki sekmede. Kabuğunuzu bir kez seçin; sayfadaki bütün bloklar ona uyar. Bir Windows
-sunucusunda ya da SQL'de çalışan komutlar tek sefer yazıldı.
+Kurulum altı adımdan oluşur:
+
+1. Bir domain controller'da gMSA'yı oluşturun.
+2. Her SQL Server'da gMSA'ya bir login ve performans rolünü verin.
+3. DAB'ı MCP host'una kurun ve onu çalıştıran scheduled task'ı kaydedin.
+4. DAB yapılandırmasını yazın: bir kök dosya ve her SQL Server için bir dosya.
+5. Entra uygulamasını oluşturun ve rolünü agent'ın managed identity'sine atayın.
+6. MCP trafiğini VNet'te tutun, sonra connector'ı ekleyin.
+
+Admin makinesinde çalışan komutlar iki sekmede veriliyor. Kabuğunuzu bir kez seçin; sayfadaki bütün bloklar ona uyar.
+Bir Windows sunucusunda ya da SQL'de çalışan komutlar yalnızca bir kez veriliyor.
 
 ### 1. gMSA'yı oluşturun (bir domain controller'da)
 
@@ -104,17 +116,17 @@ SELECT IS_SRVROLEMEMBER('sysadmin', N'CONTOSO\gmsa-dab$') AS is_sysadmin;   -- e
 gMSA sysadmin değildir; yalnızca `##MS_ServerPerformanceStateReader##` rolünü alır (SQL Server 2016–2019'da bunun
 yerine `VIEW SERVER STATE`).
 
-`##MS_ServerPerformanceStateReader##`, `VIEW SERVER PERFORMANCE STATE` demektir: performans DMV'leri, başka bir şey
-değil. Tablo verisi yok, güvenlik DMV'leri yok, hiçbir şeyi değiştirme imkânı yok. Veritabanı kullanıcısı da
-oluşturulmuyor. ✅
+`##MS_ServerPerformanceStateReader##`, `VIEW SERVER PERFORMANCE STATE` yetkisini verir: performans DMV'leri; tablo
+verisi yok, güvenlik DMV'leri yok, hiçbir şeyi değiştirme imkânı yok. 📄 Biz yalnızca login'i ve rol üyeliğini
+oluşturduk; veritabanı kullanıcısı yok. ✅
 
-2016–2019'da bunun yerine `GRANT VIEW SERVER STATE` kullanın. Daha geniştir (güvenlikle ilgili durumu ve başka
-oturumların sorgu metnini de kapsar). 📄
+2016–2019'da bunun yerine `GRANT VIEW SERVER STATE` kullanın. Bu yetki daha geniştir (güvenlikle ilgili durumu da
+kapsar). 📄
 
 {{< alert icon="circle-info" >}}
 **Yetki yoksa iki view hata vermez, yanlış söyler.** `sys.dm_exec_sessions` ve `sys.dm_exec_requests` bu durumda
-**yalnız DAB'ın kendi oturumunu** döndürür. Sayılar geçerli görünür ama yanlıştır. "Satır dönüyor" diye değil,
-`sys.server_permissions` ile kontrol edin. 📄 (Learn; biz yalnız 2025 ile çalıştık)
+**yalnızca DAB'ın kendi oturumunu** döndürür. Sayılar geçerli görünür ama yanlıştır. "Satır dönüyor" demek yetmez;
+`sys.server_permissions`'a bakın. 📄 (Learn; biz yalnızca 2025'i denedik)
 {{< /alert >}}
 
 ### 3. DAB'ı MCP host'una kurun (yerel admin olarak)
@@ -127,12 +139,12 @@ Test-ADServiceAccount gmsa-dab                       # True
 
 Sonra aynı host'ta:
 
-1. gMSA'ya **Log on as a batch job** hakkını verin (zamanlanmış görev bunu ister).
-2. DAB'ın GitHub sürümündeki kendi kendine yeten `dab_net10.0_win-x64-2.1.5.zip` dosyasını `C:\dab\bin` altına açın.
-   .NET kurmak gerekmez. `C:\dab\bin\Microsoft.DataApiBuilder.exe --version` çıktısı `2.1.5` olmalı. **Sürümü
-   sabitleyin**: `allowed-hosts` 2.1.5 ile geldi.
+1. gMSA'ya **Log on as a batch job** hakkını verin (scheduled task bunu ister).
+2. DAB'ın GitHub'daki 2.1.5 release'inden self-contained `dab_net10.0_win-x64-2.1.5.zip` paketini `C:\dab\bin`
+   altına açın. .NET kurmak gerekmez. `C:\dab\bin\Microsoft.DataApiBuilder.exe --version` çıktısı `2.1.5` olmalı.
+   **Sürümü sabitleyin**: buradaki her şey, aşağıdaki `allowed-hosts` dahil, 2.1.5 ile test edildi. ✅
 3. `C:\dab\config` (gMSA: okuma) ve `C:\dab\logs` (gMSA: değiştirme) klasörlerini oluşturun.
-4. Servis işini *gören* zamanlanmış görevi kaydedin (DAB bir Windows servisi değildir):
+4. Servis işini *gören* scheduled task'ı kaydedin (DAB bir Windows servisi değildir):
 
 ```powershell
 $cmd = '/c set ASPNETCORE_URLS=http://0.0.0.0:5000&& C:\dab\bin\Microsoft.DataApiBuilder.exe start --config dab-config.json > C:\dab\logs\dab.log 2>&1'
@@ -143,7 +155,7 @@ $s = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -Restar
 Register-ScheduledTask -TaskName 'DAB-MCP' -Action $a -Trigger $t -Principal $p -Settings $s -Force
 ```
 
-5. TCP 5000'i **yalnız** agent ve VM alt ağlarına açın. Windows Firewall açık kalır:
+5. TCP 5000'i **yalnızca** agent ve VM alt ağlarına açın. Windows Firewall açık kalır:
 
 ```powershell
 New-NetFirewallRule -Name dab-mcp-5000 -DisplayName 'DAB MCP 5000 (VNet only)' -Direction Inbound `
@@ -152,7 +164,7 @@ New-NetFirewallRule -Name dab-mcp-5000 -DisplayName 'DAB MCP 5000 (VNet only)' -
 
 ### 4. DAB yapılandırmasını yazın
 
-Dosya düzeni göründüğünden daha önemli; nedenini [bulgular](#finding-2) anlatıyor.
+Dosya düzeni göründüğünden daha önemli; nedenini [Bulgu 2](#finding-2) anlatıyor.
 
 - **`dab-config.json`, kök dosya**: runtime, sunucu dosyalarının listesi ve bir **yer tutucu** veri kaynağı.
 - **Her SQL Server için bir dosya** (`sql01.json`, `sql02.json`): bağlantı dizesi ve entity'leri.
@@ -190,7 +202,7 @@ Kök dosya (`C:\dab\config\dab-config.json`):
 }
 ```
 
-Bir sunucu dosyası (`sql01.json`), tek entity ve üç kolonuna kısaltılmış hâli:
+Bir sunucu dosyası (`sql01.json`), tek bir entity'ye ve onun üç kolonuna kısaltılmış hâliyle:
 
 ```json
 {
@@ -228,22 +240,23 @@ Sunucu başına yedi view ve DAB'ın her biri için istediği anahtar:
 | `requests` | `sys.dm_exec_requests` | session_id, request_id |
 | `query_stats` | `sys.dm_exec_query_stats` | sql_handle, statement_start_offset, statement_end_offset, plan_handle |
 
-Zor yoldan öğrendiğimiz kurallar:
+Hatalardan öğrendiğimiz kurallar:
 
-- **Her kolonu `fields` içinde listeleyin**, agent'ın filtrelediği kolonlara açıklama yazın. `describe_entities` yalnız
+- **Her kolonu `fields` içinde listeleyin**, agent'ın filtrelediği kolonlara açıklama yazın. `describe_entities` yalnızca
   `fields` içindekileri gösterir. İlk denemede agent 72 "kullanıcı oturumu" saydı, çünkü `is_user_process` kolonundan
   habersizdi; kolon açıklanınca 2 dedi, doğrusu da buydu. ✅
-- **`anonymous` rolü yok.** Her entity'yi yalnız `MCP.Read` okuyabilir. ✅
+- **`anonymous` rolü yok.** Her entity'yi yalnızca `MCP.Read` okuyabilir. ✅
 - Her yerde **önbellek kapalı**: bunlar canlı DMV'ler. ✅
 - **Entity'leri tek tek ekleyin** ve log'u izleyin. Tek bir hatalı entity bütün DAB'ı durdurur. ✅
 
 Başlatın: `Start-ScheduledTask DAB-MCP`; ardından `Get-NetTCPConnection -LocalPort 5000 -State Listen` çıktısında
-`0.0.0.0` görünür.
+`0.0.0.0` görünmeli.
 
 ### 5. Entra uygulamasını oluşturun ve agent'a rolünü verin (admin makinesi)
 
-`api://<appId>` tanımlayıcı URI'li, **v2 token**'lı, uygulamalar için tek bir `MCP.Read` rolü olan, atamayı **zorunlu**
-tutan ve bu rolü agent'ın managed identity'sine atayan `sql-mcp-api` uygulama kaydı. Blok tekrar çalıştırılabilir.
+Aşağıdaki blok `sql-mcp-api` uygulama kaydını oluşturur: tanımlayıcı URI `api://<appId>`, **v2 token**, uygulamalar için
+tek bir `MCP.Read` rolü ve **zorunlu** atama. Ardından bu rolü agent'ın managed identity'sine atar. Blok idempotent'tir:
+tekrar çalıştırılabilir.
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -294,15 +307,16 @@ az rest -m POST --url "https://graph.microsoft.com/v1.0/servicePrincipals/$SPID/
 {{< /tab >}}
 {{< /tabs >}}
 
-İki tuzak: `az ad app update --set api…` hata verir ("Couldn't find 'api'"), Graph PATCH'i bu yüzden. Bir uygulama
-rolünün id'si de bir kez oluşunca değiştirilemez, var olanın yeniden kullanılması bu yüzden. ✅ Rolü, agent ilk kez token
-istemeden **önce** atayın: managed identity token'ları 24 saate kadar önbellekte kalır ve erken alınmış bir token'da
-`roles` claim'i olmaz. 📄
+İki tuzak: `az ad app update --set api…` hata verir ("Couldn't find 'api'"); blokta Graph PATCH kullanmamızın nedeni bu.
+Bir uygulama rolünün id'si de oluşturulduktan sonra değiştirilemez; blok bu yüzden var olan rolü yeniden kullanır. ✅
+Rolü, agent ilk kez token istemeden **önce** atayın: managed identity token'ları yaklaşık 24 saate kadar önbellekte kalır
+ve atamadan önce alınmış bir token'da `roles` claim'i olmaz. 📄
 
 ### 6. MCP trafiğini VNet'te tutun, sonra connector'ı ekleyin (admin makinesi)
 
-"Remote MCP server access" **kapalı** olunca MCP trafiği VNet'inizden geçer. Açıkken Microsoft'un ağı üzerinden internete
-çıkar ve özel bir host'a ulaşamaz. `egress` nesnesini bütün olarak gönderin. ✅
+"Remote MCP server access" **kapalı** olunca MCP trafiği VNet'inizden geçer. ✅ Açıkken Microsoft'un ağı üzerinden
+internete çıkar ve özel bir host'a ulaşamaz. 📄 Biz yalnızca "kapalı" ayarını, `egress` nesnesini aşağıdaki gibi eksiksiz
+göndererek çalıştırdık. ✅
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -329,7 +343,7 @@ az rest -m GET --url "https://management.azure.com${AGENT}?api-version=2026-01-0
 `api://<appId>/.default`, özel başlık `X-MS-API-ROLE` = `MCP.Read`, sonra üç aracı seçin. 📄 (portal yolu; biz aşağıdaki
 ARM çağrısını çalıştırdık ✅)
 
-`connector.json` içinde sır yok. Araç adlarının önüne connector'ın adı gelir:
+`connector.json` içinde sır yok. Araç adlarının önüne connector'ın adı gelir (burada `dmv_`):
 
 ```json
 {"properties":{"dataConnectorType":"Mcp","dataSource":"placeholder","identity":"system",
@@ -355,13 +369,14 @@ az rest -m PUT --url "https://management.azure.com${AGENT}/connectors/dmv?api-ve
 {{< /tab >}}
 {{< /tabs >}}
 
-`authType: AzureARM`, portaldaki "Managed identity" seçeneğinin yazdığı değerdir; özel başlıklar `extendedProperties`
-içinde düz anahtar olarak durur. Sonradan yapılan bir `GET`, `endpoint`, `armScope` ve başlığı `null` gösterir; bunlar
-yalnız yazılabilir alanlardır. ✅
+Portaldaki "Managed identity" seçeneğinin `authType: AzureARM` yazdığını portalın kodunda okuduk; portalda connector
+oluşturmadık. 📄 Yukarıda ARM ile `AzureARM` ve `extendedProperties` içinde düz anahtar olarak başlıkla oluşturduğumuz
+connector çalıştı. Sonradan yapılan bir `GET`, `endpoint`, `armScope` ve başlığı `null` gösterir; bunlar yalnızca
+yazılabilir (write-only) alanlardır. ✅
 
 ## Doğrulama
 
-**SQL'de (bir DBA olarak kontrol edin)**: DAB'ın oturumu gMSA'dır, Kerberos ile gelir, sysadmin değildir. ✅
+**SQL'de (bu kontrolü bir DBA çalıştırır)**: DAB'ın oturumu gMSA ile açılmıştır, Kerberos kullanır ve sysadmin değildir. ✅
 
 ```sql
 SELECT s.login_name, c.auth_scheme, IS_SRVROLEMEMBER('sysadmin', s.login_name) AS is_sysadmin
@@ -371,15 +386,15 @@ WHERE s.program_name LIKE 'dab-mcp%';            -- CONTOSO\gmsa-dab$   KERBEROS
 
 **Agent'a sorun**: *"sql01'de şu an kaç kullanıcı oturumu var?"* ve *"sql02'de en çok hangi wait türü var?"*. Konuşmada
 `MCP Tool` çağrıları görünür. Hemen ardından `sqlcmd` ile karşılaştırın: aynı wait türleri, aynı sırada (değerler
-kümülatif) ve `sqlcmd`'de bir oturum fazla (kendisi). ✅
+kümülatiftir) ve `sqlcmd`'de bir oturum fazla (`sqlcmd`'nin kendi oturumu). ✅
 
-**Yalnız agent okuyabilir** ✅:
+**Yalnızca agent okuyabilir** ✅:
 
-- host'un kendi managed identity'si `api://<appId>` için token alamaz: `AADSTS501051`, atanmamış;
+- host'un kendi managed identity'si `api://<appId>` için token alamaz: `AADSTS501051` (rol atanmamış);
 - bir ARM token'ı HTTP 401 alır (yanlış audience);
-- `X-MS-API-ROLE` başlığı olmadan agent'ın çağrıları `NoEntitiesConfigured` döner.
+- `X-MS-API-ROLE` başlığı olmadan agent'ın çağrıları `NoEntitiesConfigured` döndürür.
 
-**Yol VNet'tir.** MCP host'unda Filtering Platform denetimini bir dakikalığına açın, agent'a bir şey sorun ve 5000
+**Trafik VNet'ten geçer.** MCP host'unda Filtering Platform denetimini bir dakikalığına açın, agent'a bir şey sorun ve 5000
 portuna gelen bağlantıların kaynaklarını listeleyin. Hepsi agent alt ağında olmalı. ✅
 
 ```powershell
@@ -397,39 +412,35 @@ auditpol /set /subcategory:"Filtering Platform Connection" /success:disable   # 
 ### Bulgu 1: erişilemeyen tek bir SQL Server, açılışta bütün DAB'ı durdurur
 
 DAB açılırken **her** entity'nin şemasını okur. O anda herhangi bir SQL Server'a erişilemiyorsa DAB kapanır. Sağlıklı
-sunucular da onunla birlikte gider. ✅
+sunucular da DAB'la birlikte erişilemez olur. ✅
 
 - `dab.log` şunu yazar: `Unable to complete runtime initialization … Cannot obtain Schema for entity sql02_wait_stats …
   A network-related or instance-specific error`. Entity'nin öneki hangi sunucu olduğunu söyler. ✅
 - Sunucu geri geldiğinde **kendiliğinden toparlanmaz**. Görevin "hata olursa yeniden başlat" ayarı hiç devreye girmez:
   `cmd.exe` sorunsuz başlamış, DAB -1 ile çıkmıştır ve Task Scheduler bunu *completed* olarak kaydeder (olay 201, dönüş
-  kodu 4294967295, seviye Information). Onu yalnız `Start-ScheduledTask DAB-MCP` geri getirir. ✅
-- Görev çıktıyı `>` ile yönlendirir, yani **her başlatma `dab.log`'un üzerine yazar**. Yeniden başlatmadan önce okuyun. ✅
-- Application log'a `.NET Runtime` 1000 "Hosting failed to start" düşer; hiçbir sunucunun adını vermez. ✅
-- Bir sunucu **DAB çalışırken** ölürse yalnız onun entity'leri hata verir (ilk çağrı yaklaşık 15 sn sonra, bağlantı
-  zaman aşımı) ve sunucu dönünce kendiliğinden düzelir. ✅
+  kodu 4294967295, seviye Information). DAB'ı yalnızca `Start-ScheduledTask DAB-MCP` geri getirir. ✅
+- Görev çıktıyı `>` ile yönlendirir, yani **her başlatma `dab.log`'un üzerine yazar**. Yeniden başlatmadan önce log'u okuyun. ✅
+- Application log'a `.NET Runtime` 1000 "Hosting failed to start" olayı düşer; olay hiçbir sunucunun adını vermez. ✅
+- Bir sunucu **DAB çalışırken** çökerse yalnızca onun entity'leri hata verir (ilk çağrı yaklaşık 15 sn sonra hata verir:
+  bağlantı zaman aşımı) ve sunucu geri gelince kendiliğinden düzelirler. ✅
 
 {{< alert icon="triangle-exclamation" >}}
 **Görevi değil, dinleyiciyi izleyin.** Bir SQL Server'ı yamaladıktan ya da MCP host'unu yeniden başlattıktan sonra TCP
 5000'de bir şeyin dinlediğini (ya da bir MCP `initialize` çağrısının başarılı olduğunu) dışarıdan kontrol edin. Görev
-durumu *Ready* der ve zararsız görünür. DAB'ı yalnız bütün SQL Server'ları ayaktayken yeniden başlatın.
+durumu *Ready* görünür ve bu zararsız gibi durur. DAB'ı yalnızca bütün SQL Server'ları ayaktayken yeniden başlatın.
 {{< /alert >}}
 
 ### Bulgu 2: `.off` çözümü {#finding-2}
 
-DAB 2.1.5'te bir veri kaynağı ya da entity için **`enabled` bayrağı yok**. Bariz anahtarları, sunuculardan birinin var
-olmayan bir adı gösterdiği bir config kopyasında denedik:
-
-| Deneme | Sonuç |
-|---|---|
-| Ölü sunucunun bütün entity'lerinde `"mcp": false` | DAB yine açılışta düşer ✅ |
-| Üstüne veri kaynağında `health.enabled: false` | yine düşer ✅ |
-| `sql02.json` dosyasının adını `sql02.json.off` yapmak | **açılır, sql01'in 7 entity'siyle** ✅ |
+DAB 2.1.5'te bir veri kaynağı ya da entity için **`enabled` bayrağı yok**. İlk akla gelen anahtarları config'in bir
+kopyasında denedik; bu kopyada sunuculardan biri var olmayan bir adı gösteriyordu. Entity'lerinde `"mcp": false` ve
+veri kaynağında `health.enabled: false` işe yaramadı; dosyasının adını `.off` yapmak yaradı. ✅ (Denemeler
+[ekte](#appendix).)
 
 Nedeni DAB'ın yükleyicisinde: `data-source-files` içinde listelenen ama **diskte olmayan bir dosya sessizce atlanır**.
-📄 (kaynak kod) ✅ (davranış). Her sunucunun, ilki dahil, kendi dosyası olmasının ve kökte yalnız bir **yer tutucu** veri
+📄 ([DAB kaynak kodu](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Config/ObjectModel/RuntimeConfig.cs#L389-L429)) ✅ (davranış). Her sunucunun, ilki dahil, kendi dosyası olmasının ve kökte yalnızca bir **yer tutucu** veri
 kaynağı bulunmasının nedeni bu: DAB 2.1.5 veri kaynağı olmayan bir kökü reddeder ("Invalid connection-string"), adı
-çözülemeyen ve entity'si olmayan yer tutucuya ise hiç bağlanmaz. ✅ Her DAB yükseltmesinden sonra bunu yeniden test edin;
+çözülemeyen ve entity'si olmayan yer tutucu ise DAB'ın açılmasını engellemedi. ✅ Her DAB yükseltmesinden sonra bunu yeniden test edin;
 sonraki bir sürüm ona bağlanmayı deneyebilir. 📄
 
 Bir sunucuyu host'ta devreden çıkarmak:
@@ -442,7 +453,7 @@ Start-ScheduledTask DAB-MCP; Start-Sleep 15
 [bool](Get-NetTCPConnection -LocalPort 5000 -State Listen -EA SilentlyContinue)   # True = DAB is up
 ```
 
-Ya da bir Azure VM için admin makinesinden, VM agent'ı üzerinden (SSH gerekmez). 📄 (çalıştırılmadı)
+Ya da bir Azure VM için admin makinesinden, VM agent'ı üzerinden (uzak oturum gerekmez). 📄 (çalıştırılmadı)
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -460,7 +471,7 @@ az vm run-command invoke -g <rg> -n mcp01 --command-id RunPowerShellScript --scr
 {{< /tab >}}
 {{< /tabs >}}
 
-Geri almak için iki adı yer değiştirip yeniden başlatın. Atlama sessiz olduğundan `data-source-files` içindeki bir yazım
+Geri almak için dosya adını eski hâline getirip yeniden başlatın. Atlama sessiz olduğundan `data-source-files` içindeki bir yazım
 hatası da bir sunucuyu sessizce düşürür. Her değişiklikten sonra DAB'ın yükleyeceği entity'leri sayın ve sayı 7 × sunucu
 sayısının altına düşünce alarm verin:
 
@@ -474,41 +485,37 @@ foreach ($f in $root.'data-source-files') {
 Get-ChildItem "$c\*.json.off" -EA SilentlyContinue | ForEach-Object { "TAKEN OUT: $($_.Name)" }
 ```
 
-Toparlanmayı **bilerek elle** bıraktık. Otomatik bir yeniden deneme döngüsü, ölü sunucu çıkarılana ya da geri gelene
+Kurtarmayı **bilerek elle** yapıyoruz. Otomatik bir yeniden deneme döngüsü, ölü sunucu çıkarılana ya da geri gelene
 kadar yine başarısız olur ve sorunu gizler.
 
 ### Bulgu 3: sunucu yapılandırması neden açılmıyor
 
-Doğal bir sonraki soru "sql01'de MAXDOP kaç?" oldu. DAB bunu SQL'de bir nesne olmadan cevaplayamıyor:
+Akla gelen sonraki soru "sql01'de MAXDOP kaç?" oldu. DAB bunu SQL'de bir nesne olmadan cevaplayamıyor:
 
 - `sys.configurations`, `sys.database_scoped_configurations` ve `sys.dm_server_registry` view'larında **`sql_variant`**
-  kolonlar var. DAB bir view'ın şemasını `SELECT *` ile okur ve filtre modelini yalnız `fields` içindekilerden değil,
-  bütün kolonlardan kurar. `sql_variant`'ın karşılığı yok, bu yüzden **DAB açılışta düşer**; kolonu `fields` dışında
-  bırakmak da işe yaramaz. 📄 (DAB kaynak kodu; kolon tipleri kontrol edildi ✅)
-- `SERVERPROPERTY()` ve `@@VERSION` fonksiyondur. DAB yalnız tablo, view ve stored procedure sunar. DMV fonksiyonlarını
-  denedik (`dm_exec_sql_text`, `dm_db_index_physical_stats`, `dm_io_virtual_file_stats`): DAB, SQL hatası 216 ile
-  ("parameters were not supplied") açılamaz. ✅
-- Her şeyi düz tiplere çeviren bir sarmalayıcı view işe yarardı, ama o SQL'de bir nesnedir ve bu tasarım buna izin
-  vermez. Yapılandırma soruları `sqlcmd` ve SSMS'te kalıyor.
+  tipinde kolonlar var. DAB bir view'ın şemasını `SELECT *` ile okur ve filtre modelini yalnızca `fields` içindekilerden
+  değil, bütün kolonlardan kurar. DAB'da `sql_variant` için bir tip eşlemesi yok, bu yüzden **DAB açılışta düşer**; kolonu `fields` dışında
+  bırakmak da işe yaramaz. 📄 ([DAB kaynak kodu](https://github.com/Azure/data-api-builder/blob/v2.1.5/src/Core/Services/TypeHelper.cs#L287-L305))
+- `SERVERPROPERTY()` ve `@@VERSION` fonksiyondur. DAB yalnızca tablo, view ve stored procedure sunar. DMV fonksiyonlarını
+  denedik (`dm_exec_sql_text`, `dm_db_index_physical_stats`, `dm_io_virtual_file_stats`): DAB, SQL hatası 216
+  ("parameters were not supplied") verip açılmıyor. ✅
+- Her kolonu düz tiplere çeviren bir wrapper view işe yarardı, ama bu SQL'de bir nesne demek ve bu tasarım buna izin
+  vermiyor. Yapılandırma soruları bu yüzden `sqlcmd` ve SSMS'e kalıyor.
 
 ### Bulgu 4: sınır kapasite değil, hata bağımlılığı
 
-Tek bir DAB'a, her biri yedi entity'li 50 veri kaynağına kadar yükledik ve ölçtük. Veri kaynakları iki gerçek
+Tek bir DAB'a, her biri yedi entity'li, 50'ye kadar veri kaynağı yükleyip ölçtük. Veri kaynakları iki gerçek
 sunucumuzun takma adlarıydı. ✅
-
-| Sunucu | Dinleyici ayakta / ilk okuma | Bellek (working set) | `describe_entities` tam / `nameOnly` / tek entity |
-|---|---|---|---|
-| 2 | 2.1 s / 4.9 s | 132 MB | 74 KB / 2.3 KB / 1.5 KB |
-| 10 | 2.4 s / 5.2 s | 152 MB | 368 KB / 11 KB / 1.5 KB |
-| 25 | 3.5 s / 6.2 s | 161 MB | 921 KB / 27 KB / 1.5 KB |
-| 50 | 5.2 s / 8.0 s | 176 MB | 1.8 MB / 54 KB / 1.5 KB |
+50 sunucuda DAB 5.2 sn'de dinlemeye başladı, 176 MB kullandı ve tam bir `describe_entities` çağrısına 1.8 MB ile yanıt
+verdi; tek bir entity 1.5 KB'ta kaldı. ✅ (Tablonun tamamı [ekte](#appendix).)
 
 25 sunucuda agent, "sql17'de en çok hangi wait var" ve "sql22'de kaç kullanıcı oturumu var" için doğru entity'yi kendi
-buldu: önce `nameOnly` ile `describe_entities` çağırdı (18 KB), sonra tek bir entity'yi; oturum sayısı `sqlcmd` ile
-aynıydı. 921 KB'lık tam açıklamayı hiç çekmedi. ✅
+başına buldu: önce `nameOnly` ile `describe_entities` çağırdı, sonra tek bir entity'yi; oturum sayısı `sqlcmd` ile
+aynıydı. Agent'ın `nameOnly` çağrısı 18 KB döndürdü; ekteki tablodaki 27 KB, kendi betiğimizin DAB'ı doğrudan çağırarak
+ölçtüğü değer. 921 KB'lık tam açıklamayı hiç çekmedi. ✅
 
-Yani sunucuları DAB başına sayıya göre değil, **hata alanı ve bakım penceresine** göre gruplayın ve her grubu
-**25 ya da daha az** tutun (test ettiğimiz büyüklük). 25 ayrı gerçek sunucuyla ağ gecikmesi ve bağlantı havuzları
+Yani sunucuları DAB başına sayıya göre değil, **failure domain'e ve bakım penceresine** göre gruplayın ve her grupta
+**en fazla 25** sunucu olsun (agent ile test ettiğimiz en büyük grup). 25 ayrı gerçek sunucuyla ağ gecikmesi ve bağlantı havuzları
 ölçülmedi. 📄
 
 ## Sorun giderme
@@ -522,21 +529,40 @@ Yani sunucuları DAB başına sayıya göre değil, **hata alanı ve bakım penc
 | HTTP 403 | Başlıktaki rol token'da yok | `MCP.Read` rolünü agent'ın kimliğine atayın |
 | Token'da `roles` yok | Managed identity token'ı atamadan önce alınmış ve önbellekte | Bekleyin (~24 saate kadar); bir dahaki sefere ilk kullanımdan önce atayın |
 | Connector bağlanmıyor | Ad agent alt ağından çözülmüyor, firewall kuralı yok, DAB `0.0.0.0`'da değil, remote MCP access açık ya da `Host` `allowed-hosts`'ta yok | Hepsini kontrol edin; `Get-NetTCPConnection -LocalPort 5000 -State Listen` |
-| Sessions/requests tek oturum gösteriyor | Login'in yetkisi eksik; bu view'lar o zaman yalnız DAB'ın kendi oturumunu döndürür | gMSA için `sys.server_permissions`'a bakın |
+| Sessions/requests tek oturum gösteriyor | Login'in yetkisi eksik; bu view'lar o zaman yalnızca DAB'ın kendi oturumunu döndürür | gMSA için `sys.server_permissions`'a bakın |
 | `dab.log` boş | Production modunda normal | Bunun yerine dinleyiciyi ve bir MCP çağrısını kontrol edin |
 
 ## Ne öğrendik
 
-1. **DMV view'ları evet; DMV fonksiyonları hayır.** SQL'de hiçbir nesne olmadan DAB view'ları sunar. Sorgu metni, index
-   parçalanması ve dosya I/O bir sarmalayıcı ister; bu bir config ayarı değil, bir tasarım kararıdır.
+1. **DMV view'ları evet; DMV fonksiyonları hayır.** SQL'de hiçbir nesne oluşturmadan DAB view'ları sunabilir. Sorgu
+   metni, index fragmentation ve dosya I/O için bir wrapper gerekir; bu bir config ayarı değil, bir tasarım kararıdır.
 2. **Bir gMSA ve `##MS_ServerPerformanceStateReader##` yeterli.** Tek login, Kerberos, veritabanı kullanıcısı yok,
    gMSA sysadmin değil.
-3. **Uçtan uca managed identity, hiçbir yerde sır yok.** Token'ı agent'ın MI'ı alır, uygulama rolü kapıyı tutar, DAB
-   doğrular. Statik bir bearer token da çalışır ve bir günde süresi dolar.
-4. **Açılışta erişilemeyen tek sunucu bütün sunucuları düşürür ve kimse yeniden başlatmaz.** Dinleyiciyi dışarıdan izleyin;
-   Task Scheduler başarı raporlar.
+3. **Uçtan uca managed identity, hiçbir yerde sır yok.** Token'ı agent'ın MI'ı alır, uygulama rolü erişimi sınırlar, DAB
+   doğrular. Statik bir bearer token da çalışır, ama bir günde süresi dolar. ✅
+4. **Açılışta erişilemeyen tek sunucu bütün sunucuları düşürür ve DAB'ı hiçbir şey yeniden başlatmaz.** Dinleyiciyi
+   dışarıdan izleyin; Task Scheduler başarılı olarak raporlar.
 5. **Kapatma anahtarı yok, ama eksik dosya atlanıyor.** Sunucu başına bir dosya ve yer tutucu bir kök, bunu temiz ama
    sessiz bir `.off` anahtarına çevirir. Entity'leri sayarak sesini açın.
 6. **Kolonlarınızı açıklayın.** `is_user_process` bir açıklamaya kavuşana kadar agent "72 kullanıcı oturumu" dedi.
 
-**Serinin devamı:** bu kurulumu izlemek: yukarıdaki hata sinyallerine, görev durumuna güvenmeden alarm kurmak.
+**Serinin devamı:** bu kurulumun izlenmesi; görev durumuna güvenmeden, yukarıdaki hata sinyallerine alarm kurmak.
+
+## Ek: lab ölçümleri {#appendix}
+
+Bulgu 2, adı çözülmeyen bir sunucuyu devreden çıkarmak (config'in bir kopyasında):
+
+| Deneme | Sonuç |
+|---|---|
+| Ölü sunucunun bütün entity'lerinde `"mcp": false` | DAB yine açılışta düştü ✅ |
+| Üstüne veri kaynağında `health.enabled: false` | yine düştü ✅ |
+| `sql02.json` dosyasının adını `sql02.json.off` yapmak | **açıldı, sql01'in 7 entity'siyle** ✅ |
+
+Bulgu 4, her biri yedi entity'li N veri kaynağıyla tek bir DAB; kendi betiğimiz DAB'ı doğrudan çağırarak ölçtü:
+
+| Sunucu | Dinleyici ayakta / ilk okuma | Bellek (working set) | `describe_entities` tam / `nameOnly` / tek entity |
+|---|---|---|---|
+| 2 | 2.1 s / 4.9 s | 132 MB | 74 KB / 2.3 KB / 1.5 KB |
+| 10 | 2.4 s / 5.2 s | 152 MB | 368 KB / 11 KB / 1.5 KB |
+| 25 | 3.5 s / 6.2 s | 161 MB | 921 KB / 27 KB / 1.5 KB |
+| 50 | 5.2 s / 8.0 s | 176 MB | 1.8 MB / 54 KB / 1.5 KB |

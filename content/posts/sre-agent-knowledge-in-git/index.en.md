@@ -8,36 +8,39 @@ showTableOfContents: true
 ---
 
 Uploading runbooks to Azure SRE Agent by hand works on day one. By day thirty the knowledge base and the runbooks in
-git no longer agree: an edit made in a pull request never reaches the agent, a retired runbook is still answered from,
-and nobody can say which version the agent read. We wanted git to be the only place a runbook is written, and the
+git no longer agree: an edit made in a pull request never reaches the agent, the agent still answers from a retired
+runbook, and nobody can say which version the agent read. We wanted git to be the only place a runbook is written, and the
 agent's knowledge base to follow every merge on its own.
 
-✅ = proven in our lab · 📄 = documented only (Microsoft Learn or Microsoft's public samples), not tested by us.
+✅ = proven in our lab · 📄 = documented only (Microsoft Learn, Microsoft's public samples, or the code shown in this post), not tested by us.
 We ran every command in zsh. The PowerShell tabs were not tested on our side; they follow the documentation. 📄
 
 ## Goal and audience
 
-**Goal.** At the end, runbooks live in one folder of a git repository. Every merge to `main` runs a short GitHub Actions
-job that uploads new and changed files to the agent's knowledge base and deletes the ones you removed. The job signs
+**Goal.** By the end of this post, runbooks live in one folder of a git repository. Every merge to `main` that touches
+`docs/` runs a short GitHub Actions job that uploads new and changed files to the agent's knowledge base and deletes the ones you removed. The job signs
 in with OIDC: no secret is stored anywhere, and its identity can touch one agent and nothing else in Azure.
+The section on skills near the end covers the second of the title's two paths: the few procedures your on-call uses
+every week.
 
 **Audience.** Engineers who run Azure SRE Agent and keep their runbooks, or want to keep them, in GitHub. You should be
 comfortable with `az`, GitHub Actions and Azure role assignments.
 
 ## Why not connect the repository and be done
 
-SRE Agent can also connect a repository through **Code Access**. It is tempting to assume that this puts the
-repository's documents into the knowledge base. The public documentation is not yet clear on this point, so we settled
-it in a lab with a fresh agent and a private repository carrying unique "canary" strings:
+SRE Agent can also connect a repository through **Code Access**. You might expect this to put the repository's
+documents into the knowledge base, and Microsoft Learn now describes a connected repository as a knowledge source. 📄
+We tested it in a lab on 2026-10-06, with a fresh agent and a private repository carrying unique "canary" strings
+(made-up facts the model cannot know from anywhere else):
 
 - Right after the repository was connected, the knowledge base file list was **empty**. The repository was cloned into
   the agent's workspace instead. ✅
-- Asked to search **only its knowledge base** for a canary that exists only in the repository, the agent answered
-  "Memory Search: found 0 relevant results", twice. ✅
-- Asked the same question in plain words, it found the answer with **Grep Search** over the cloned files and linked the
-  file and line on GitHub. ✅
+- We asked the agent, twice, to search **only its knowledge base** for a canary that exists only in the repository.
+  Both times it answered "Memory Search: found 0 relevant results". ✅
+- When we asked the same question in plain words, it found the answer with **Grep Search** over the cloned files and
+  linked the file and line on GitHub. ✅
 
-So a connected repository is searched as **files**; it is not indexed **as knowledge**. If you want your runbooks in the
+So in our lab a connected repository was searched as **files**; it was not indexed **as knowledge**. If you want your runbooks in the
 knowledge base, with citations from memory search, something has to upload them. That something is the job below.
 
 {{< alert icon="triangle-exclamation" >}}
@@ -51,13 +54,14 @@ agent.
 
 | Area | Requirement | |
 |---|---|---|
-| SRE Agent | A running agent; agent memory enabled (it is by default) | ✅ |
-| Azure roles | Someone with **Owner** or **User Access Administrator** on the agent's resource group, once, to create the CI identity and assign its role | ✅ |
+| SRE Agent | A running agent with agent memory enabled (our new agent needed no change) | ✅ |
+| Azure roles | Someone with **Owner** on the agent's resource group (or **Contributor** plus **User Access Administrator**), once, to create the CI identity and assign its role | 📄 |
 | CI identity | A user-assigned managed identity with a GitHub federated credential; **SRE Agent Administrator** on the agent | ✅ |
 | GitHub | A repository with Actions enabled; permission to set repository variables | ✅ |
-| Admin machine | Azure CLI signed in; Python 3.10+ with `azure-identity` and `requests` for a local dry run. zsh or PowerShell | ✅ zsh / 📄 PowerShell |
+| Admin machine | Azure CLI signed in; Python 3 with `azure-identity` and `requests` for a local dry run. zsh or PowerShell | ✅ zsh / 📄 PowerShell |
 
-The data-plane calls need **SRE Agent Administrator** on the agent. 📄 Without it every call returns
+Uploading knowledge documents needs **SRE Agent Standard User**; deleting them needs **SRE Agent Administrator**, so
+the sync identity gets Administrator. 📄 Without a role on the agent, our data-plane calls returned
 `403 Forbidden: Access denied by PDP`. ✅
 
 ## Architecture
@@ -72,7 +76,8 @@ flowchart LR
   AG -- "6 memory search, citations" --> CHAT["Chat and incidents"]
 {{< /mermaid >}}
 
-1. Runbooks change only through pull requests, so they get review and history. ✅
+1. Runbooks should change only through pull requests (protect `main`), so they get review and history. This is our
+   recommendation; our demo repository took direct pushes to `main`.
 2. A push to `main` that touches `docs/**` starts the job. ✅
 3. and 4. The job exchanges GitHub's OIDC token for an Entra token for the identity, then asks for a token with the
    audience `https://azuresre.dev`. No client secret exists. ✅
@@ -85,6 +90,10 @@ it also manages skills, hooks, connectors and scheduled tasks. 📄 Protect the 
 accordingly.
 
 ## Steps
+
+At a glance: (1) lay out the repository, with a `.kbignore` for paths that stay out of the knowledge base; (2) create
+the CI identity, a managed identity with a GitHub federated credential and one role on the agent; (3) add the sync
+script; (4) try it locally with `--dry-run`; (5) add the workflow that runs it.
 
 ### 1. Lay out the repository
 
@@ -101,7 +110,7 @@ tools/sre_kb_sync.py
 
 The knowledge base is **flat**: a file is stored under its base name, and uploading a file with an existing name
 replaces the old document. 📄 Two runbooks called `latency.md` in different folders would overwrite each other, so the
-script refuses to run when two files share a base name. ✅ Give runbooks names that are unique across the folder
+script refuses to run when two files share a base name. 📄 (the script below; we did not trigger it) Give runbooks names that are unique across the folder
 (`payments-latency.md`, `storage-latency.md`).
 
 `.kbignore` lists path prefixes that stay in git but never reach the knowledge base, one per line:
@@ -113,7 +122,8 @@ docs/runbooks/only-in-repo/
 
 ### 2. Create the CI identity
 
-An administrator with Owner or User Access Administrator on the resource group runs these commands once. **What the
+An administrator with Owner on the resource group (or Contributor plus User Access Administrator) runs these commands
+once. 📄 **What the
 identity gets** is one thing: SRE Agent Administrator on this one agent. No Entra app registration and no secret are
 created.
 
@@ -159,7 +169,7 @@ the error message prints the exact subject GitHub presented; copy it into the fe
 {{< /alert >}}
 
 Store three **repository variables** (not secrets; none of them is sensitive): `AZURE_CLIENT_ID` (the identity's client
-ID), `AZURE_TENANT_ID` and `SRE_AGENT_ENDPOINT`. Read the endpoint once from ARM:
+ID), `AZURE_TENANT_ID` and `SRE_AGENT_ENDPOINT`. Read the client ID and the endpoint once:
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
@@ -184,6 +194,7 @@ This started as a four-call bash snippet we ran by hand: read the agent endpoint
 `https://azuresre.dev`, upload the files as multipart, check the indexer.
 
 ```bash
+SUB=<sub>   # RG and AGENT as in step 2
 ENDPOINT=$(az resource show \
   --ids /subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.App/agents/$AGENT \
   --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv)
@@ -194,18 +205,20 @@ curl "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TO
 ```
 
 That is enough for one upload. It does not remove a runbook you deleted, and it does not stop two files with the same
-name from overwriting each other. `tools/sre_kb_sync.py` is the same four calls grown up:
+name from overwriting each other. `tools/sre_kb_sync.py` is the same four calls, extended:
 
 - **Auth** through `DefaultAzureCredential`: `az login` on your machine, OIDC in GitHub Actions, managed identity
-  elsewhere. Nothing is printed except file names and HTTP codes. ✅
+  elsewhere. No token or secret is printed: the output is file names, counts, HTTP codes, the indexer status and, on an error,
+  the first 300 characters of the response body. 📄 (the script below)
 - **Endpoint** from `--endpoint`, or from ARM with `--subscription`, `--resource-group` and `--agent`. ✅
-- **Recursive walk** of the folder, `.md` and `.txt` only, `.kbignore` applied, duplicate base names rejected,
-  16 MB per file, uploads batched below the 100 MB request limit. ✅ (limits 📄)
+- **Recursive walk** of the folder, `.md` and `.txt` only, `.kbignore` applied. ✅ Duplicate base names rejected,
+  16 MB per file, uploads batched below the 100 MB request limit. 📄 (limits: Learn; the rest: the script below)
 - **`--git-base`**: uploads only what changed since that commit and deletes what was removed. Without it, every file is
   uploaded (same name replaces). ✅
 - **`--prune`**: also deletes documents that are not in the folder. Use it only when git owns the whole knowledge base;
   it would remove documents the agent saved from chat. 📄
-- **Waits** until every uploaded file shows as indexed and the indexer has run, or fails after a timeout. ✅
+- **Waits** until every uploaded file shows as indexed and the indexer has run. ✅ It fails after a timeout. 📄 (the
+  script below)
 - **`--dry-run`** prints the plan and changes nothing. ✅
 
 ```python
@@ -456,7 +469,37 @@ if __name__ == "__main__":
     main()
 ```
 
-### 4. Add the workflow
+### 4. Try it locally first
+
+{{< tabs group="shell" >}}
+{{< tab label="zsh" >}}
+```bash
+pip install azure-identity requests
+python3 tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <agent> --dry-run
+```
+{{< /tab >}}
+{{< tab label="PowerShell" >}}
+```powershell
+pip install azure-identity requests
+python tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <agent> --dry-run
+```
+{{< /tab >}}
+{{< /tabs >}}
+
+```text
+3 file(s) in docs/runbooks; upload 3, delete 0
+  would upload docs/runbooks/payments/api/latency.md
+  would upload docs/runbooks/payments/db-failover.md
+  would upload docs/runbooks/payments/refund-replay.md
+```
+
+The sample shows the repository before the Verification tests below: it still held `payments/api/latency.md`, which
+the Delete test removed, and not yet `network/dns-failover.md`, which the Add test created. ✅
+
+For a real run (without `--dry-run`), your own account needs SRE Agent Administrator on the agent ✅, and read access to
+the agent resource if you resolve the endpoint from ARM. 📄
+
+### 5. Add the workflow
 
 ```yaml
 name: knowledge-sync
@@ -500,36 +543,9 @@ jobs:
           fi
 ```
 
-A push uses the commit range of that push, so only changed files are sent. A manual run (`workflow_dispatch`) uploads
-the whole folder, which is how you seed a new agent. `fetch-depth: 0` is needed for the diff. `concurrency` keeps two
-merges from syncing at the same time. ✅
-
-### 5. Try it locally first
-
-{{< tabs group="shell" >}}
-{{< tab label="zsh" >}}
-```bash
-pip install azure-identity requests
-python3 tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <agent> --dry-run
-```
-{{< /tab >}}
-{{< tab label="PowerShell" >}}
-```powershell
-pip install azure-identity requests
-python tools/sre_kb_sync.py --subscription <sub> --resource-group <rg> --agent <agent> --dry-run
-```
-{{< /tab >}}
-{{< /tabs >}}
-
-```text
-3 file(s) in docs/runbooks; upload 3, delete 0
-  would upload docs/runbooks/payments/api/latency.md
-  would upload docs/runbooks/payments/db-failover.md
-  would upload docs/runbooks/payments/refund-replay.md
-```
-
-Your own account needs SRE Agent Administrator on the agent for the real run ✅, and read access to the agent resource if
-you resolve the endpoint from ARM. 📄
+A push-triggered run uses the commit range of that push, so only changed files are sent. ✅ A manual run
+(`workflow_dispatch`) uploads the whole folder, which is how you seed a new agent. `fetch-depth: 0` is needed for the
+diff. `concurrency` keeps two merges from syncing at the same time. 📄 (the workflow above)
 
 ## Verification
 
@@ -552,6 +568,7 @@ To check the state yourself:
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
 ```bash
+ENDPOINT=$(az resource show --ids $AGENT_ID --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv)
 TOKEN=$(az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv)
 curl -s -H "Authorization: Bearer $TOKEN" "$ENDPOINT/api/v1/AgentMemory/files"
 curl -s -H "Authorization: Bearer $TOKEN" "$ENDPOINT/api/v1/agentmemory/indexer-status"
@@ -559,6 +576,7 @@ curl -s -H "Authorization: Bearer $TOKEN" "$ENDPOINT/api/v1/agentmemory/indexer-
 {{< /tab >}}
 {{< tab label="PowerShell" >}}
 ```powershell
+$ENDPOINT = az resource show --ids $AGENT_ID --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv
 $TOKEN = az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv
 Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } -Uri "$ENDPOINT/api/v1/AgentMemory/files"
 Invoke-RestMethod -Headers @{ Authorization = "Bearer $TOKEN" } -Uri "$ENDPOINT/api/v1/agentmemory/indexer-status"
@@ -579,9 +597,10 @@ Knowledge is searched when the agent decides to search. A **skill** is different
 instructions and the agent loads the skill itself when the task matches. 📄 We put the same refund procedure in both
 places, with different canaries, and asked five differently worded questions in five new chats. The agent used the
 **skill all five times** and the knowledge document never; it did not even run a memory search. ✅ Five questions are a
-small sample, not a benchmark, but it matches what the documentation describes. Keep the two to three procedures your
-on-call uses every week as skills, versioned in the same repository, and leave the long tail in the knowledge base.
-Those are the two paths from one source. We created the skill with `PUT {endpoint}/api/v2/extendedAgent/skills/<name>` ✅;
+small sample, not a benchmark, but the result matches what the documentation describes. Keep the two or three
+procedures your on-call uses every week as skills, versioned in the same repository, and leave the rarely used rest in
+the knowledge base.
+Those are the two paths from one source. We created the skill on the agent ✅, through `PUT {endpoint}/api/v2/extendedAgent/skills/<name>` 📄;
 syncing skills from CI follows the same pattern and is not covered here.
 
 ## A note on srectl
@@ -594,21 +613,21 @@ released yet, so this post uses only the public data-plane API, which anyone can
 | Symptom | Cause | Fix |
 |---|---|---|
 | `AADSTS700213: No matching federated identity record found for presented assertion subject 'repo:<org>@<id>/…'` | The organization sends the newer OIDC subject with numeric IDs | Copy the subject from the error into the federated credential ✅ |
-| `403 Forbidden: Access denied by PDP` on every data-plane call | The caller lacks SRE Agent Administrator on the agent, or the assignment has not propagated | Assign the role on the agent resource; wait a minute ✅ |
+| `403 Forbidden: Access denied by PDP` on every data-plane call | The caller lacks SRE Agent Administrator on the agent, or the assignment has not taken effect yet | Assign the role on the agent resource ✅; a new assignment can take up to 10 minutes 📄 |
 | `azure/login` fails with "No subscriptions found" | The identity has no Azure resource role, by design | `allow-no-subscriptions: true` 📄 |
-| `DELETE …/agentmemory/document/<name>` returns `500 Failed to delete document`, but the document is gone | Seen once in our lab; the next delete returned 200 | The script re-reads the file list and accepts the delete if the document is no longer listed ✅ |
-| A runbook was deleted in git but the agent still answers from it | The sync only uploads; nothing deletes | Run with `--git-base` (the workflow does) or `--prune` ✅ |
-| `two or more files share a base name` | The knowledge base is flat | Rename one file ✅ |
+| `DELETE …/agentmemory/document/<name>` returns `500 Failed to delete document`, but the document is gone | Seen once in our lab | The script re-reads the file list and accepts the delete if the document is no longer listed ✅ |
+| A runbook was deleted in git but the agent still answers from it | The sync only uploads; nothing deletes | Run with `--git-base` (the workflow does) ✅ or `--prune` 📄 |
+| `two or more files share a base name` | The knowledge base is flat | Rename one file 📄 |
 | `Agent memory is disabled. Cannot upload documents.` | Knowledge is turned off on the agent | Turn it on in the agent settings 📄 |
 
 ## What we learned
 
-- A repository connected through Code Access is searched as files; it is not indexed as knowledge. Memory search
+- In our lab, a repository connected through Code Access was searched as files; it was not indexed as knowledge. Memory search
   returned nothing for it until the CI job uploaded the files. ✅
 - The public data-plane API is enough for a full sync: upload, list, delete and indexer status. Adds, edits and deletes
-  all reached the agent within half a minute of the merge. ✅
+  all reached the agent 26 to 34 seconds after the merge. ✅
 - Deletes are the part a plain upload loop forgets. Drive them from the git diff, and verify against the file list,
   because the delete call itself can report a failure that did not happen. ✅
-- The knowledge base is flat. Unique file names are a rule, not a style choice. ✅
+- The knowledge base is flat. Unique file names are a rule, not a style choice. 📄
 - The CI identity needs one role on one agent and no secret: a managed identity with a federated credential. ✅
 - For the few procedures used every week, a skill beat the same text in the knowledge base five times out of five. ✅
