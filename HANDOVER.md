@@ -5,7 +5,7 @@
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English. This repository is public (D18), history included: everything committed must pass the scrub rules in
 `docs/writing-guide.md` §4. Drafts, reviews, internal discussion, raw notes and unapproved material stay outside the
-repo, in `files/`. Read `CLAUDE.md` and `docs/decisions.md` (D1–D41) next.
+repo, in `files/`. Read `CLAUDE.md` and `docs/decisions.md` (D1–D43) next.
 
 ## Post 3 — where it stands (2026-10-09)
 
@@ -38,7 +38,7 @@ run-as password reaching the agent's logs, which Emre may drop.
 
 ## Where things are
 
-- `docs/decisions.md`: every decision, dated (D1–D41). Read it first.
+- `docs/decisions.md`: every decision, dated (D1–D43). Read it first.
 - `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill (D40), verbatim from his text. Use it to review or
   restructure a post (fact-check the key claims, structure, language, strong Turkish review). Edit it only on his word.
   Since D41 it is a fixed step of the publishing flow (below). Hugo does not build `.claude/`, so it never reaches the site (checked with a full build, 2026-10-09). The repo is

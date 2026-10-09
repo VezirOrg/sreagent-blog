@@ -147,6 +147,13 @@ Every new post goes through these steps in order (D5, D41). Emre sees a post onl
      it.
    - Mark anything Emre must verify, as the skill says; list each one in the review summary.
    - Keep front matter, slug and URLs.
+   - **A finding that would change a tested thing** (command, code, sample output, test result, ✅/📄 marker, step
+     order, a new claim or alternative) **is tested first** (D43): write a test plan (what, which lab, expected
+     result, pass criterion), run it in the post's own lab as an admin identity against the ARM API (never through
+     SRE Agent), restore the lab exactly, and apply only what passed; a newly tested claim gets ✅. Then review the fixed
+     post again. A clean second review goes on to step 4. A stuck finding (test failed, could not run, or flagged
+     again) stops and goes to Emre as a short plain report. Wording and structure fixes need no test. Test logs stay
+     in `files/`.
    - Run the scrub check again.
 4. **Private preview.** Build: `hugo --buildDrafts --relativeURLs --uglyURLs -d <tmp>` (from a scratch copy of the repo
    with the bundle added) and publish it as a **private** preview. Its cover page carries a short **review summary**:
@@ -194,7 +201,7 @@ commit'te değişir.
 **Onay:** yazı `draft: true` ile repo dışında (`files/<slug>-draft/`) yazılır → `tech-blog-review` skill'i ile TR ve EN
 ayrı ayrı gözden geçirilir → özgün taslak tarihli bir kopya olarak saklanır, düzeltmeler uygulanır (olgular, komutlar
 ve test sonuçları yalnızca review işaret ettiyse değişir; Emre'nin doğrulaması gerekenler işaretlenir) → kısa bir
-review özetiyle özel önizleme → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
+review özetiyle özel önizleme (test edilmiş bir şeyi değiştirecek bulgular önce post'un kendi lab'inde test edilir, yalnızca geçenler uygulanır, düzeltilmiş yazı yeniden review edilir; takılan bulgu kısa bir raporla Emre'ye gider, D43) → Emre onaylar → iki dilde `draft: false`, commit, push → workflow yayımlar (D41). Repoyu public yapmak ya da Pages'i açmak yalnız Emre'nin kararıdır.
 
 **Yazar hakkında metin yok:** Emre'nin onayladığı birebir metin (asistanı iletmişse) dışında sitede Emre hakkında kişisel
 ya da kariyer metni yer almaz. Yazar kutusu yalnız ad ve unvan (D21). Rehber yalnız onun sesini taklit eder.
