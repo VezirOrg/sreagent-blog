@@ -69,7 +69,9 @@ log), `post3-draft/` (the draft above), `261006-post2-plan.md`, `post2-demo/`, `
 - **Sources (D24):** no quotes from internal answers and no attribution to any team or group; claims rest on public
   docs (📄) or our own lab (✅).
 - **Live systems:** every change to a live system needs the go of Emre's assistant and is logged before it starts.
-  Labs are built by the lab template's session (D37). Credentials come from Drive `.env` files via `direnv exec`;
+  This project builds each post's lab itself from the shared lab template (D37 as amended by D47): `azd -e <env>` from
+  the template's checkout, next free env name, never while a template session is open, and every build or teardown gets
+  its row in the template's lab register in the same step. Credentials come from Drive `.env` files via `direnv exec`;
   values are never printed.
 - The session brief template says to make this repo private if found public; that conflicts with D18. Leave it public.
 
