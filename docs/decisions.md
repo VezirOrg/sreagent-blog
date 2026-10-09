@@ -106,3 +106,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D40 | **The project skill `tech-blog-review` is added at `.claude/skills/tech-blog-review/SKILL.md`**, copied byte for byte from Emre's text; sessions edit it only on his word. It reviews or restructures a technical post for a newcomer reader: fact-check the load-bearing claims, structure, language, with a strong Turkish review. | Not part of the site: Hugo builds only from its own folders, and `.claude/` is not one of them. |
+
+## 2026-10-09 — Review before approval (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D41 | **Every new post is reviewed with the `tech-blog-review` skill and fixed before Emre sees it for approval.** Flow: draft → review with `.claude/skills/tech-blog-review` (TR and EN each reviewed on its own terms) → apply the fixes → private preview with a short review summary (top findings, what was changed, anything left for Emre to decide) → Emre approves → publish. In the fix step, facts, commands and test results change only where the review flagged them, and anything Emre must verify is marked, as the skill says. The original draft is kept as a dated copy beside the draft, outside the repo. | Adds a step before D5's approval; D5 still holds. The flow is written out in `docs/writing-guide.md` §6. |
