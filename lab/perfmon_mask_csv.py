@@ -7,10 +7,12 @@ replaces each one with a neutral placeholder from a private mapping file, so the
   mapping.csv   two columns with a header row: real,placeholder  (e.g. MyPaymentsPool,AppPool1)
                 Kept private: it is the key back to the real names.
 
-Match rule (the same as perfmon_mask_db.py, unchanged): case-insensitive, every occurrence, longer names first;
-an all-lowercase occurrence gets the lowercase placeholder. It runs over every line of the file (header and data).
-The output is UTF-8. The tool then fails if any real name is still present anywhere in the output
-(case-insensitive); it never prints a real name.
+Match rule (D68, rule b; shared with perfmon_mask_db.py): case-insensitive, longer names first; a name of
+MIN_LEN (5) or more characters is replaced wherever it occurs, also inside a longer token; a shorter name only as
+a whole word (no letter or digit right before or after it), so a short name cannot change ordinary words or
+counter and object names. An all-lowercase occurrence gets the lowercase placeholder. It runs over every line of
+the file (header and data). The output is UTF-8. The tool then fails if any real name is still present anywhere in
+the output under the same rule; it never prints a real name.
 
 Python standard library only. Usage:
   python3 perfmon_mask_csv.py capture.csv mapping.csv capture-masked.csv [--force]
@@ -29,8 +31,18 @@ def load_mapping(path):
     return [(r['real'], r['placeholder']) for r in rows]
 
 
+MIN_LEN = 5
+
+
+def name_pattern(real, min_len=MIN_LEN):
+    """Rule b (D68): long names match anywhere; short names only as a whole word."""
+    if len(real) >= min_len:
+        return re.escape(real)
+    return r'(?<![A-Za-z0-9])' + re.escape(real) + r'(?![A-Za-z0-9])'
+
+
 def masker(mapping):
-    pats = [(re.compile(re.escape(real), re.IGNORECASE), ph) for real, ph in mapping]
+    pats = [(re.compile(name_pattern(real), re.IGNORECASE), ph) for real, ph in mapping]
 
     def mask(s):
         if s is None:
@@ -71,7 +83,7 @@ def main():
     mapping = load_mapping(a.mapping)
     mask = masker(mapping)
     # quick pre-check: only lines holding some real name go through the (slower) masker
-    any_real = re.compile('|'.join(re.escape(r) for r, _ in mapping), re.IGNORECASE) if mapping else None
+    any_real = re.compile('|'.join(name_pattern(r) for r, _ in mapping), re.IGNORECASE) if mapping else None
     lines = changed = header_cells = 0
     with open_text(a.csv_in) as fin, open(a.csv_out, 'w', encoding='utf-8', newline='') as fout:
         for line in fin:
@@ -87,11 +99,12 @@ def main():
             fout.write(line)
     # verify: no real name left anywhere in the output
     left = 0
+    checks = [re.compile(name_pattern(r), re.IGNORECASE) for r, _ in mapping]
     with open(a.csv_out, encoding='utf-8', newline='') as f:
         for line in f:
-            low = line.lower()
-            left += sum(1 for r, _ in mapping if r.lower() in low)
-    print(f'mapping entries: {len(mapping)}; lines: {lines:,}; lines changed: {changed:,}; '
+            if any_real and any_real.search(line):
+                left += sum(1 for c in checks if c.search(line))
+    print(f'mapping entries: {len(mapping)} ({sum(len(r) < MIN_LEN for r, _ in mapping)} shorter than {MIN_LEN}: whole word only); lines: {lines:,}; lines changed: {changed:,}; '
           f'header cells changed: {header_cells:,}')
     if left:
         print(f'FAILED: {left} real-name occurrences still present (names not printed)')

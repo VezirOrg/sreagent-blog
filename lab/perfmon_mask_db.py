@@ -7,10 +7,12 @@ each one with a neutral placeholder from a private mapping file, so the masked d
   mapping.csv   two columns with a header row: real,placeholder  (e.g. MyPaymentsPool,AppPool1)
                 Kept private: it is the key back to the real names.
 
-Replacement is case-insensitive on whole occurrences in counters.path, host, object, instance and base_instance;
-an all-lowercase occurrence gets the lowercase placeholder. Longer names are replaced first. meta.source_file is
-replaced by the masked file name. Index statistics are rebuilt and the file is vacuumed. The tool then fails if any
-real name is still present, in the tables or anywhere in the file's raw bytes (case-insensitive).
+Match rule (D68, rule b; shared with perfmon_mask_csv.py), on counters.path, host, object, instance and
+base_instance: case-insensitive, longer names first; a name of MIN_LEN (5) or more characters is replaced wherever
+it occurs, a shorter name only as a whole word (no letter or digit right before or after it). An all-lowercase
+occurrence gets the lowercase placeholder. meta.source_file is replaced by the masked file name. Index statistics
+are rebuilt and the file is vacuumed. The tool then fails if any real name is still present under the same rule,
+in the tables or anywhere in the file's raw bytes (case-insensitive).
 
 Python standard library only. Usage:
   python3 perfmon_mask_db.py capture.db mapping.csv capture-masked.db [--force]
@@ -33,8 +35,18 @@ def load_mapping(path):
     return [(r['real'], r['placeholder']) for r in rows]
 
 
+MIN_LEN = 5
+
+
+def name_pattern(real, min_len=MIN_LEN):
+    """Rule b (D68): long names match anywhere; short names only as a whole word."""
+    if len(real) >= min_len:
+        return re.escape(real)
+    return r'(?<![A-Za-z0-9])' + re.escape(real) + r'(?![A-Za-z0-9])'
+
+
 def masker(mapping):
-    pats = [(re.compile(re.escape(real), re.IGNORECASE), ph) for real, ph in mapping]
+    pats = [(re.compile(name_pattern(real), re.IGNORECASE), ph) for real, ph in mapping]
 
     def mask(s):
         if s is None:
@@ -76,21 +88,26 @@ def main():
     db.commit()
     # verify: no real name left anywhere in text columns
     left = []
+    texts = [t for row in db.execute('SELECT path, host, object, instance, base_instance FROM counters') for t in row if t]
+    texts += [v for (v,) in db.execute('SELECT value FROM meta') if v]
     for real, _ in mapping:
-        n = db.execute('SELECT count(*) FROM counters WHERE path LIKE ? OR host LIKE ? OR instance LIKE ? OR object LIKE ?',
-                       (f'%{real}%',) * 4).fetchone()[0]
-        n += db.execute('SELECT count(*) FROM meta WHERE value LIKE ?', (f'%{real}%',)).fetchone()[0]
+        pat = re.compile(name_pattern(real), re.IGNORECASE)
+        n = sum(1 for t in texts if pat.search(t))
         if n:
-            left.append((real, n))
+            left.append((real, f'{n} text values'))
     db.execute('VACUUM')
     db.close()
     # verify again on the raw bytes of the file (free pages, indexes, statistics)
     with open(a.out, 'rb') as f:
-        raw = f.read().lower()
-    left += [(real, 'raw bytes') for real, _ in mapping if real.lower().encode() in raw]
+        raw = f.read()
+    left += [(real, 'raw bytes') for real, _ in mapping
+             if re.search(name_pattern(real).encode(), raw, re.IGNORECASE)]
     print(f'mapping entries: {len(mapping)}; counters changed: {changed}')
     if left:
-        print(f'FAILED: {len(left)} real names still present (names not printed)')
+        with open(a.mapping, encoding='utf-8', newline='') as f:  # data row number in the mapping file
+            rows = {r['real']: i for i, r in enumerate(csv.DictReader(f), start=1)}
+        print(f'FAILED: {len(left)} real names still present (names not printed): ' +
+              '; '.join(f'mapping row {rows[r]} (length {len(r)}): {where}' for r, where in left))
         sys.exit(1)
     print('verify: no real name left')
 
