@@ -12,10 +12,11 @@ base_instance: case-insensitive, longer names first; a name of MIN_LEN (5) or mo
 it occurs, a shorter name only as a whole word (no letter or digit right before or after it). An all-lowercase
 occurrence gets the lowercase placeholder. meta.source_file is replaced by the masked file name. Index statistics
 are rebuilt and the file is vacuumed. The tool then fails if any real name is still present under the same rule,
-in the tables or anywhere in the file's raw bytes (case-insensitive).
+in the tables or anywhere in the file's raw bytes (case-insensitive), or if any entry of the private denylist
+(--denylist, required) is found the same way.
 
 Python standard library only. Usage:
-  python3 perfmon_mask_db.py capture.db mapping.csv capture-masked.db [--force]
+  python3 perfmon_mask_db.py capture.db mapping.csv capture-masked.db --denylist denylist.txt [--force]
 """
 import argparse
 import csv
@@ -62,6 +63,7 @@ def main():
     ap.add_argument('db')
     ap.add_argument('mapping')
     ap.add_argument('out')
+    ap.add_argument('--denylist', required=True, help='private list of names that must never appear (one per line)')
     ap.add_argument('--force', action='store_true')
     a = ap.parse_args()
     if os.path.exists(a.out):
@@ -90,7 +92,10 @@ def main():
     left = []
     texts = [t for row in db.execute('SELECT path, host, object, instance, base_instance FROM counters') for t in row if t]
     texts += [v for (v,) in db.execute('SELECT value FROM meta') if v]
-    for real, _ in mapping:
+    with open(a.denylist, encoding='utf-8') as f:
+        deny = [l.strip() for l in f if l.strip() and not l.lstrip().startswith('#')]
+    mapped = {r.lower() for r, _ in mapping}
+    for real in [d for d in deny if d.lower() not in mapped] + [r for r, _ in mapping]:
         pat = re.compile(name_pattern(real), re.IGNORECASE)
         n = sum(1 for t in texts if pat.search(t))
         if n:
@@ -100,14 +105,16 @@ def main():
     # verify again on the raw bytes of the file (free pages, indexes, statistics)
     with open(a.out, 'rb') as f:
         raw = f.read()
-    left += [(real, 'raw bytes') for real, _ in mapping
+    left += [(real, 'raw bytes') for real in [d for d in deny if d.lower() not in mapped] + [r for r, _ in mapping]
              if re.search(name_pattern(real).encode(), raw, re.IGNORECASE)]
     print(f'mapping entries: {len(mapping)}; counters changed: {changed}')
     if left:
         with open(a.mapping, encoding='utf-8', newline='') as f:  # data row number in the mapping file
-            rows = {r['real']: i for i, r in enumerate(csv.DictReader(f), start=1)}
+            rows = {r['real']: f'mapping row {i}' for i, r in enumerate(csv.DictReader(f), start=1)}
+        for i, d in enumerate(deny, start=1):
+            rows.setdefault(d, f'denylist entry {i}')
         print(f'FAILED: {len(left)} real names still present (names not printed): ' +
-              '; '.join(f'mapping row {rows[r]} (length {len(r)}): {where}' for r, where in left))
+              '; '.join(f'{rows.get(r, "?")} (length {len(r)}): {where}' for r, where in left))
         sys.exit(1)
     print('verify: no real name left')
 

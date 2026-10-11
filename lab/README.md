@@ -7,7 +7,7 @@ step of every lab test, done here, before anything reaches the skill or the agen
 ## Step 0 of every test: mask the CSV
 
 ```sh
-python3 -I lab/perfmon_mask_csv.py capture.csv mapping.csv capture-masked.csv
+python3 -I lab/perfmon_mask_csv.py capture.csv mapping.csv capture-masked.csv --denylist denylist.txt
 ```
 
 - `mapping.csv` has two columns with a header row: `real,placeholder`, one row per name to hide (hosts, app pools,
@@ -17,8 +17,12 @@ python3 -I lab/perfmon_mask_csv.py capture.csv mapping.csv capture-masked.csv
   occurs, also inside a longer token; a shorter name only as a whole word (no letter or digit right before or after
   it), so it cannot change ordinary words or counter and object names. An all-lowercase occurrence gets the
   lowercase placeholder. It runs over every line (header and data). The output is UTF-8.
-- The tool fails (exit 1) if any real name is still in the output under the same rule. It prints counts only, never
-  a name. If it fails, nothing is uploaded.
+- `denylist.txt` (required) is the private list of every real name ever seen in these captures, one per line. A
+  mapping covers one batch of captures; the denylist covers them all, so a name the batch's mapping missed is still
+  caught.
+- The tool fails (exit 1) if any mapping name or any denylist name is still in the output under the same rule. It
+  prints counts and line numbers only, never a name. If it fails, nothing is uploaded: add the missing name to a
+  new dated mapping (never edit an old one) and mask again.
 - Name the masked file neutrally (`srv02-masked.csv`, not the original file name, which may carry a host name).
 
 Then hand **only the masked CSV** to the skill: upload it where the agent can read it, or give its path to a local
