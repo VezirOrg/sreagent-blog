@@ -13,7 +13,7 @@ replaced by the masked file name. Index statistics are rebuilt and the file is v
 real name is still present, in the tables or anywhere in the file's raw bytes (case-insensitive).
 
 Python standard library only. Usage:
-  python3 perfmon_mask.py capture.db mapping.csv capture-masked.db [--force]
+  python3 perfmon_mask_db.py capture.db mapping.csv capture-masked.db [--force]
 """
 import argparse
 import csv
