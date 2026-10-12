@@ -25,7 +25,8 @@ A post is ready for review only when every box is ticked, in **both** languages.
       Every claim keeps its marker, even where the review skill says to mark only exceptions (D44).
 - [ ] **What we learned**: the 3–6 findings worth remembering, written as plain statements, not a recap of the steps.
 - [ ] **Feature image** (`feature.svg` or `feature.png`, 1200 × 630) in the page bundle. It is the card thumbnail on the
-      home page and the hero on the post. Keep text in it language-neutral (it is shared by TR and EN).
+      home page and the hero on the post. Exactly 1200 × 630: cards are sized to that shape (D75), so any other shape is
+      cropped. Keep text in it language-neutral (it is shared by TR and EN).
 - [ ] **Scrub checklist** passed (see §4). No lab identifiers, no secrets, no customer data.
 - [ ] **TR and EN parity** (see §5).
 - [ ] **Front matter** complete (see §2).
