@@ -1,13 +1,12 @@
 # HANDOVER — sreagent-blog
 
-**Post 4 (PerfMon triage) has its evidence but no text: skill v2 ran on SRE Agent (Srv02 blind, Srv13 hourly), the
-skill moved to VezirOrg/sreagent-playbook, Post 4's lab is DOWN. Next: Post 4's slug, outline and draft. Three posts
-live.**
+**Post 4 (PerfMon triage) has its evidence but no text; its lab is DOWN. Three posts live; since 2026-10-12 the home
+page cards show the whole cover image (D75). Next: Post 4's slug, outline and draft.**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English, https://sreagent.emreguclu.io. This repository is public (D18), history included: everything committed must
 pass the scrub rules in `docs/writing-guide.md` §4. Drafts, reviews, test logs, data and raw notes stay outside the
-repo, in the gitignored `files/` (a Google Drive folder). Read `CLAUDE.md` and `docs/decisions.md` (D1–D74) next.
+repo, in the gitignored `files/` (a Google Drive folder). Read `CLAUDE.md` and `docs/decisions.md` (D1–D75) next.
 
 ## Next steps
 
@@ -110,13 +109,15 @@ in the lab storage; both blobs were deleted (D71) and the denylist check now sto
   tracked tree minus the theme). The hooks live in `.git/hooks/` and are not committed; recreate them if missing. The
   denylist is `files/scrub-denylist.txt` (never committed). One older record-only commit with lab names stays in
   history (Emre: no rewrite).
+- **Covers are exactly 1200 × 630 (D75).** Post cards are sized to that shape (`thumbnailAspectRatio = "1.905"`), so
+  a cover of any other shape is cropped on the home page and lists.
 - Purpose first (D53). Docs vs our result: list conflicts for Emre, never resolve them yourself (D52). Markers ✅/📄
   (D44). Author profile (D21). Privileges (D22). Sources (D24, D26). Repo public (D18).
 - In messages to other sessions, refer to Emre by name (or "they"); never a real name from the data.
 
 ## Where things are
 
-- `docs/decisions.md` (D1–D74), `docs/writing-guide.md` (§4 scrub, §5 TR/EN parity, §6 flow).
+- `docs/decisions.md` (D1–D75), `docs/writing-guide.md` (§4 scrub, §5 TR/EN parity, §6 flow).
 - `.claude/skills/tech-blog-review/SKILL.md`: Emre's review skill, verbatim (D40).
 - `scripts/scrub-check.sh`: the scrub gate.
 - `.github/workflows/pages.yml`: builds and deploys on push to `main`. Record-only commits carry `[skip ci]`.
@@ -131,12 +132,14 @@ in the lab storage; both blobs were deleted (D71) and the denylist check now sto
 - Google Drive's file provider on this Mac sometimes returns "Resource deadlock avoided" (the old short lab log is
   still locked). Keep working copies in the session scratchpad and retry.
 
-## Last session (2026-10-11, on demand)
+## Last session (2026-10-12, on demand)
 
-Skill v2 end to end (D62–D74): raw-CSV input with its own converter, the four v1.2 method fixes, masking moved to a
-lab step with rule b and a denylist check; local blind round 3 passed; the lab principal got SRE Agent Administrator
-on the agent only and the data-plane write path was proven with a throwaway skill; v1.1 backed up and v2 uploaded
-through the API; agent runs on Srv02 (blind) and Srv13 (hourly prompt) scored by SQL; a masking gap found and fixed
-(two old blobs deleted); source data copied to the playbook project; AAU mapped to threads; Post 4's lab torn down;
-`tools/` and `lab/` removed from this repo (now in the playbook repo).
-Repo note: the vezir brief says this repo should be private; it is public by D18 (the Pages blog) and stays public.
+Emre saw the home page cards cut the covers left and right. Cause: Blowfish's card box defaults to 3:2 with
+`object-fit: cover`; our covers are 1200 × 630 (1.905), so about 21% of their width was lost. Emre chose option A
+(BLOG-A, D75): `thumbnailAspectRatio = "1.905"` in `config/_default/params.toml`; option B (letterbox via a theme
+override) was rejected. The 1200 × 630 rule is in D75 and `docs/writing-guide.md` §1. Commit 47135fb, Pages run green,
+live TR and EN checked (card boxes 329 × 173, all three covers whole). Before/after and live screenshots:
+`files/261012-thumbnail-fix/`. Post pages and the images themselves were not touched.
+
+The session before (2026-10-11) finished skill v2 end to end (D62–D74), tore down Post 4's lab and moved `tools/` and
+`lab/` to VezirOrg/sreagent-playbook; details in `docs/decisions.md`.
