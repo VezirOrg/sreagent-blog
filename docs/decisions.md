@@ -252,3 +252,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | D78 | **Data: the export runs on the existing lab subscription (real spend); earlier months come from the export's "Export selected dates".** A new lab, built by this project from the shared lab template (D47), holds only the SRE Agent and the skill. | Real spend includes other projects' labs in the same subscription: their names are masked in the post like any lab identifier (D4). |
 | D79 | **Scope v1: the previous month only.** No month-to-date alerts, no forecast. | |
 | D80 | **Emre's change: the store is SQLite (Python's standard `sqlite3`) and the export format is CSV.** Replaces DuckDB and Parquet, which would need a library the sandbox may not have. The skill reuses the PerfMon skill's two-script pattern (a converter to SQLite plus a query helper, D67; VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox/`). Learning item for the post: can the agent's sandbox install Python packages (`pip install duckdb`/`pyarrow`), or only use what is preinstalled? Docs first, then a harmless test once an agent exists. | Emre, 2026-10-13, via his assistant. D76's sentence is corrected accordingly. Boundary for now: no lab, no export, no spend until Emre approves the plan. |
+
+## 2026-10-13 — Post 4 uses the black box flow diagram (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D81 | **Post 4 (PerfMon triage) must show the end-to-end flow diagram of the PerfMon black box.** Use the English version kept in VezirOrg/sreagent-playbook at `playbooks/perfmon-blackbox/docs/img/perfmon-blackbox-flow.svg`, in its latest version when Post 4 is written. | Emre, 2026-10-13, via his assistant. The Turkish original is in the playbook project's private Drive folder. The TR post may use a Turkish version if one is published in the playbook repo; otherwise ask Emre. |
