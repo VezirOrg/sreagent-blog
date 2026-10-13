@@ -258,3 +258,12 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D81 | **Post 4 (PerfMon triage) must show the end-to-end flow diagram of the PerfMon black box.** Use the English version kept in VezirOrg/sreagent-playbook at `playbooks/perfmon-blackbox/docs/img/perfmon-blackbox-flow.svg`, in its latest version when Post 4 is written. | Emre, 2026-10-13, via his assistant. The Turkish original is in the playbook project's private Drive folder. The TR post may use a Turkish version if one is published in the playbook repo; otherwise ask Emre. |
+
+## 2026-10-13 — Post 5 plan answers 1–4 (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D82 | **F-A: try the FOCUS export on the lab subscription.** If Cost Management refuses it, the exact error is recorded (post material) and the export falls back to the actual and amortized cost datasets (CSV). Settles the open point in D77. | Emre, 2026-10-13, via his assistant. |
+| D83 | **K-SP: the lab service principal creates the export through the Exports REST API**, so the commands can go into the post. Emre grants the role it needs; this project never grants itself a role. | Emre, 2026-10-13, via his assistant. Found after the answer (2026-10-13): the principal already has Owner on the management group above the subscription (effective `*` on the subscription). The plan had said "Owner on its lab RG only", which was wrong. Whether that inherited Owner is enough, or a separate Cost Management Contributor assignment is wanted, is asked again before the export is created. |
+| D84 | **ST-OK: the export goes to a separate small storage account**, kept apart from the lab: public network access "enabled from selected networks" with no IP rules, default Deny, the trusted Azure services bypass (Cost Management writes through it with a system-assigned identity), and a private endpoint for the agent's lab. | Emre, 2026-10-13, via his assistant. A deliberate exception to the lab template's storage rule (public access disabled, no bypass), because Cost Management cannot write to such an account. |
+| D85 | **YETKİ-OK: the Post 5 agent's identity gets Reader and Monitoring Reader at subscription scope**, read-only, so it can read the metrics of every resource that has cost, including other projects' labs. | Emre, 2026-10-13, via his assistant. Reading metrics changes nothing in those labs. Plan questions 5 (timing) and 6 (how the Mac reads the export files) are not answered; nothing is assumed. |
