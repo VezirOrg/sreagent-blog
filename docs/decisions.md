@@ -294,3 +294,9 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | # | Decision | Notes |
 |---|---|---|
 | D92 | **Post 6 (slug to be decided) purpose, D53, Emre's words (AMAÇ-OK):** "Bir Windows sunucuda sorun anına ait performans verisi yoksa kök neden tahmine kalır. Bu yazı, sunucuya bizden hiçbir yazılım kurmadan Azure Policy ve Machine Configuration ile dağıtılan bir 'kara kutu' kaydedicinin nasıl çalıştığını, verinin özel depolamaya nasıl taşındığını ve Azure SRE Agent'ın bu veriyle olayı nasıl incelediğini, adım adım kurulumuyla birlikte gösterir." | Emre, 2026-10-13, via his assistant. Source: the public playbook VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox/`; the setup steps refer to its v1.0.0 release. The black box flow diagram is used in this post too (Emre: a must; a translated copy for the other language if needed). Only aliases (vm1, arc1) in the text. Post 4 (D56, D81) covers the agent's triage of a capture; how the two posts split the material is to be confirmed with Emre. A lab for screenshots only after a plan, cost and duration are approved, and never overlapping with Post 5's lab. |
+
+## 2026-10-13 — Post 5's skill: API upload with the Author role after all (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D93 | **ROL-19-AUTHOR, replaces D91 (PORTAL):** the lab service principal gets **SRE Agent Author** on Post 5's lab agent resource only (beside its SRE Agent Standard User; not Administrator), then this project PUTs `cost-monthly` through the data plane, reads it back byte for byte, and runs the September demo thread. The role assignment is removed at teardown. | Emre, 2026-10-13, via his assistant: "Skill'i daha önce yaptığımız gibi Author yetkisi ile sen hallet, ben yanlış karar verdim." Author + Standard User is the least right the playbook project tested for skill writes (its decision P64). The portal guide stays in `files/` unused. |
