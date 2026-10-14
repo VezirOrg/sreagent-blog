@@ -349,3 +349,11 @@ Durable decisions for this site. Newest at the bottom. Each one is dated and say
 | D125 | **PUBLISH: the black box series, parts 1–4, EN and TR, is published** ("bence harika publish edelim"), in one commit, together with the D122 retrofit of `sre-agent-knowledge-in-git`. Links between the parts use the real slugs `perfmon-blackbox-part-1` … `-part-4`. | Emre, 2026-10-14 (~23:45 TR), via his assistant. |
 | D126 | **D99-OK: Part 3's purpose sentence stands as edited under D118 ("Kara kutu, bir Windows sunucuda …").** | Emre, 2026-10-14, via his assistant. |
 | D127 | **HEDEF-1.0.2 timing (amends D123): Part 2 is published targeting v1.0.1, a real published release.** After the v1.0.2 cut (2026-10-15), a small update commit to Part 2 sets the release URL and the default `ExportEveryHours` = 1. | Emre, 2026-10-14, via his assistant. |
+
+## 2026-10-15 — Site-wide: comments, analytics, SEO (Emre, via his assistant)
+
+| # | Decision | Notes |
+|---|---|---|
+| D128 | **YORUM-GISCUS: comments via giscus (GitHub Discussions on VezirOrg/sreagent-blog), on posts only.** Mapping by pathname, reactions on, language per page (en/tr), theme follows the reader's color scheme. Wired behind a site param that stays **off** until the giscus GitHub App is installed (a browser step for Emre). | Emre, 2026-10-14, via his assistant. Discussions are enabled on the repo; the app install and anything the API cannot do go in Emre's guide (`files/blog-etkilesim-seo-rehberi.md`). |
+| D129 | **ANALİTİK-ÇEREZSİZ: cookie-less analytics with GoatCounter**, driven by a site param holding the GoatCounter code; empty = off. Emre creates the account and sends the code. | Emre, 2026-10-14, via his assistant. No cookies, so no consent banner. |
+| D130 | **SEO-DENETİM: an SEO audit of the live site and the Hugo/Blowfish config, and fixes for what is missing** (sitemap and robots.txt, canonical and hreflang with x-default EN, unique descriptions, OpenGraph/Twitter cards with images, BlogPosting JSON-LD, titles, alt text, RSS, 404, `lang` on TR pages), with Lighthouse SEO and performance before and after; Search Console (Domain property via DNS TXT) and Bing are Emre's browser steps, in the guide. No post's URL/slug changes; post text changes only in descriptions, alt text and front matter. Audit in `files/seo-audit-261015.md`. | Emre, 2026-10-14, via his assistant. |
