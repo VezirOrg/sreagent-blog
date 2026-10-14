@@ -1,6 +1,7 @@
 ---
 title: "{{ replace .File.ContentBaseName "-" " " | title }}"
-description: ""
+description: ""  # ≤ 160 characters, unique per post and language (D130)
+images: ["social.png"]  # 1200 × 630 PNG rendered from feature.svg, for social cards (D130)
 date: {{ .Date }}
 draft: true
 series: ["Series name"]

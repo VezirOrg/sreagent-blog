@@ -1,6 +1,7 @@
 ---
 title: "Windows sunucular için kara kutu, bölüm 2: kurulum ve maliyet"
-description: "Her Windows sunucuda sürekli kayıt alan bir PerfMon kara kutusu: Azure Policy ve Machine Configuration ile dağıtılır, sunucuya ayrıca bir şey kurulmaz, veri sunucunun kendi kimliğiyle özel depolamaya yüklenir. v1.0.1 sürümüyle adım adım kurulum, sıfırdan bir kurulumun ne kadar sürdüğü ve maliyeti."
+description: "Azure Policy ve Machine Configuration ile her Windows sunucuya PerfMon kara kutusu kurun; kayıt sunucunun kendi kimliğiyle yüklenir. Maliyetiyle birlikte."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["Windows sunucular için kara kutu"]

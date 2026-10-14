@@ -1,6 +1,7 @@
 ---
 title: "Windows sunucular için kara kutu, bölüm 4: agent olayı inceliyor"
-description: "Azure SRE Agent, Arc'a bağlı bir sunucudaki PerfMon kara kutusunun iki saatlik kaydını bir skill ile analiz ediyor: önce sakin bir saat, sonra bilerek yük bindirdiğimiz ve doğru cevabını önceden yazdığımız bir saat. Agent neyi buldu, neyi yanlış söyledi ve tek bir analiz kaça mal oluyor?"
+description: "Azure SRE Agent, PerfMon kara kutusunun iki saatini inceliyor: sakin bir saat ve cevabı önceden bilinen bir sorun. Neyi buldu, neyi kaçırdı, kaça mal oldu?"
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["Windows sunucular için kara kutu"]

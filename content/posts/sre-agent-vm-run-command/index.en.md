@@ -1,6 +1,7 @@
 ---
 title: "Let Azure SRE Agent run commands on a VM, but not as SYSTEM"
-description: "A custom role that allows managed Run Command and leaves out action Run Command, plus an Azure Policy that only lets a managed run command run as a user you name. Tested with eight calls against a real VM."
+description: "Allow managed Run Command but not action Run Command, and let a policy decide which user it runs as. A custom role and an Azure Policy, tested on a real VM."
+images: ["social.png"]
 date: 2026-10-08
 draft: false
 tags: ["azure-sre-agent", "run-command", "azure-policy", "rbac"]

@@ -1,0 +1,15 @@
+{{- /* Site additions to <head> (D129, D130). */ -}}
+{{- /* hreflang x-default: the English version of a translated page. */ -}}
+{{- if .IsTranslated -}}
+  {{- range .AllTranslations -}}
+    {{- if eq .Language.Lang "en" }}
+<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- /* GoatCounter, cookie-less; off while params.goatcounter.code is empty, and only in production builds. */ -}}
+{{- with site.Params.goatcounter.code -}}
+  {{- if hugo.IsProduction }}
+<script data-goatcounter="https://{{ . }}.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+  {{- end -}}
+{{- end -}}

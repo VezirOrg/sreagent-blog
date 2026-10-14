@@ -1,6 +1,7 @@
 ---
 title: "Windows sunucular için kara kutu, bölüm 1: Sorun çıkmadan kayıt başlasın"
-description: "Bir Windows sunucu gece yavaşladığında sabaha çoğu zaman elde veri kalmaz. Bizim çözümümüz: her sunucuda bir PerfMon kara kutusu ve bu kaydı okuyan Azure SRE Agent. İki parçanın birlikte nasıl çalıştığını tek bir akış şemasında görüyor, serinin geri kalanında neler kuracağımızı kısaca anlatıyoruz."
+description: "Sunucu gece yavaşladı, sabah elde veri yok. Çözümümüz: her Windows sunucuda bir PerfMon kara kutusu ve bu kaydı okuyan Azure SRE Agent."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["Windows sunucular için kara kutu"]

@@ -1,6 +1,7 @@
 ---
 title: "Setting up SQL MCP for Azure SRE Agent"
-description: "Give Azure SRE Agent read-only access to SQL Server DMVs through Data API builder: a gMSA, Kerberos, no object on SQL, a managed-identity connector over the VNet, and the failure modes we found on the way."
+description: "Read-only access to SQL Server DMVs for Azure SRE Agent through Data API builder: gMSA, Kerberos, a managed-identity connector and the failures we hit."
+images: ["social.png"]
 date: 2026-10-04
 draft: false
 series: ["SQL MCP for Azure SRE Agent"]

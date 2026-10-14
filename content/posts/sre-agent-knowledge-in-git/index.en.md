@@ -1,6 +1,7 @@
 ---
 title: "Keep Azure SRE Agent knowledge in git, synced by a script and a pipeline"
-description: "Azure SRE Agent takes knowledge as uploaded files, and a GitHub repository connected through Code Access does not become knowledge. Keep the documents in a GitHub repository of their own; a script pushes them through the public data-plane API, and a pipeline runs it on every merge."
+description: "Keep Azure SRE Agent knowledge in its own GitHub repo: a script uploads it through the data-plane API and a pipeline runs it on every merge."
+images: ["social.png"]
 date: 2026-10-06
 draft: false
 tags: ["azure-sre-agent", "knowledge", "github-actions", "entra-id", "skills"]

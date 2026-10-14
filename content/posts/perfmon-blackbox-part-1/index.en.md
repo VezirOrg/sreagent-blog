@@ -1,6 +1,7 @@
 ---
 title: "A black box for Windows servers, part 1: record first, ask later"
-description: "When a Windows server slows down at night, the data is usually gone by morning. Our answer: a PerfMon black box on every server and Azure SRE Agent to read it. How the two work together, in one flow diagram, and what the rest of the series builds."
+description: "A Windows server slows down at night and by morning the data is gone. Our answer: a PerfMon black box on every server, read by Azure SRE Agent."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["A black box for Windows servers"]

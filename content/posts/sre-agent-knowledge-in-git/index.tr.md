@@ -1,6 +1,7 @@
 ---
 title: "Azure SRE Agent bilgisini git'te tutmak: bir betik ve bir pipeline ile senkron"
-description: "Azure SRE Agent knowledge'ı yüklenen dosyalardan alıyor; Code Access ile bağlanan bir GitHub reposu knowledge olmuyor. Dokümanları kendi GitHub reposunda tutun; bir betik onları public data-plane API ile yüklesin, bir pipeline da betiği her merge'de çalıştırsın."
+description: "Azure SRE Agent knowledge'ını ayrı bir GitHub reposunda tutun: bir betik dosyaları data-plane API ile yükler, bir pipeline da betiği her merge'de çalıştırır."
+images: ["social.png"]
 date: 2026-10-06
 draft: false
 tags: ["azure-sre-agent", "knowledge", "github-actions", "entra-id", "skills"]

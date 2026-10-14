@@ -1,6 +1,7 @@
 ---
 title: "Windows sunucular için kara kutu, bölüm 3: makinenin içi"
-description: "PerfMon kara kutusu bir Windows sunucuda neler yapıyor: bir veri toplayıcı, üç zamanlanmış görev ve bir klasör. Sunucu yeniden başladığında ya da disk dolduğunda ne oluyor, sunucu kaydı kendi kimliğiyle nasıl yüklüyor? Arc'a bağlı bir sunucu üzerinden."
+description: "Windows sunucunun içinde PerfMon toplayıcısı, üç zamanlanmış görev ve bir klasör; yeniden başlatmada, disk dolunca ve depolama kesintisinde neler oluyor?"
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["Windows sunucular için kara kutu"]

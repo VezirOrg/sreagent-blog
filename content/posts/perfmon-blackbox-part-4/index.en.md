@@ -1,6 +1,7 @@
 ---
 title: "A black box for Windows servers, part 4: the agent investigates"
-description: "Azure SRE Agent analyses two hours of the PerfMon black box on an Arc-enabled server through a skill: a quiet hour, then an hour with a deliberately staged load whose ground truth was written down first. What it found, what it got wrong, and what one analysis costs."
+description: "Azure SRE Agent analyses two hours of a PerfMon black box: a quiet hour and a staged problem with a known answer. What it found, missed and cost."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["A black box for Windows servers"]

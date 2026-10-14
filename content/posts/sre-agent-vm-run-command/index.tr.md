@@ -1,6 +1,7 @@
 ---
 title: "Azure SRE Agent VM'de komut çalıştırsın, ama SYSTEM olarak değil"
-description: "Managed Run Command'a izin veren, action Run Command'ı dışarıda bırakan bir custom role ve managed run command'ın yalnızca sizin seçtiğiniz bir kullanıcıyla çalışmasına izin veren bir Azure Policy. Gerçek bir VM'de sekiz çağrıyla test edildi."
+description: "Managed Run Command'a izin verip action Run Command'ı kapatan bir custom role ve komutun hangi kullanıcıyla çalışacağını belirleyen bir Azure Policy."
+images: ["social.png"]
 date: 2026-10-08
 draft: false
 tags: ["azure-sre-agent", "run-command", "azure-policy", "rbac"]

@@ -1,0 +1,10 @@
+{{- /* Site override of Blowfish's article-comments (D128): giscus, on posts only, behind params.giscus.enabled. */ -}}
+{{- $g := site.Params.giscus -}}
+{{- if and $g.enabled (eq .Section "posts") (not .Params.disableComments) -}}
+  <div class="pt-3">
+    <hr class="border-dotted border-neutral-300 dark:border-neutral-600" />
+    <div class="pt-3">
+      {{ partial "comments.html" . }}
+    </div>
+  </div>
+{{- end -}}

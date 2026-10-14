@@ -28,6 +28,9 @@ A post is ready for review only when every box is ticked, in **both** languages.
 - [ ] **Feature image** (`feature.svg` or `feature.png`, 1200 × 630) in the page bundle. It is the card thumbnail on the
       home page and the hero on the post. Exactly 1200 × 630: cards are sized to that shape (D75), so any other shape is
       cropped. Keep text in it language-neutral (it is shared by TR and EN).
+- [ ] **Social image** `social.png` (1200 × 630 PNG, rendered from `feature.svg`) in the bundle and
+      `images: ["social.png"]` in both front matters: LinkedIn, X and others do not show SVG (D130).
+- [ ] **Description** at most 160 characters, unique per post and language (D130).
 - [ ] **Scrub checklist** passed (see §4). No lab identifiers, no secrets, no customer data.
 - [ ] **TR and EN parity** (see §5).
 - [ ] **Front matter** complete (see §2).

@@ -1,6 +1,7 @@
 ---
 title: "A black box for Windows servers, part 2: set it up and know what it costs"
-description: "A PerfMon flight recorder on every Windows server, deployed by Azure Policy and Machine Configuration with nothing installed, uploading to private storage with the server's own identity. The setup at release v1.0.1, what a fresh install took, and what it costs."
+description: "Deploy a PerfMon black box to every Windows server with Azure Policy and Machine Configuration, upload with its own identity, and see what it costs."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["A black box for Windows servers"]

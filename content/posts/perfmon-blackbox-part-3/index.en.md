@@ -1,6 +1,7 @@
 ---
 title: "A black box for Windows servers, part 3: inside the machine"
-description: "What the PerfMon black box does on a Windows server: the collector, three scheduled tasks and one folder, how it behaves on a restart or when the disk fills up, and how the server uploads with its own identity. Shown on an Arc-enabled server."
+description: "Inside the Windows server: the PerfMon collector, three scheduled tasks and one folder, and what happens on a restart, a full disk or a storage outage."
+images: ["social.png"]
 date: 2026-10-14
 draft: false
 series: ["A black box for Windows servers"]
