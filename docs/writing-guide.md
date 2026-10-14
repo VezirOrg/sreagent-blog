@@ -131,6 +131,9 @@ Standard placeholders:
 - Both files exist, have the same sections in the same order, the same commands, the same ✅/📄 markers, and the same
   numbers. A finding in one language is a finding in the other.
 - Translate the prose, not the code. Commands, identifiers and product names stay as they are.
+- **Turkish is written, not translated (D118, D119).** The TR text must read as if written in Turkish: no calques
+  (for example "kara kutu", never "uçuş kaydedicisi"; "biz test etmedik", not "bizim tarafımızda test edilmedi"), and
+  TR titles are written natively rather than translated from EN.
 - Turkish style: plain, technical Turkish; English product terms stay English (managed identity, connector,
   scheduled task); Turkish suffixes attach with an apostrophe (`DAB'ın`, `token'ı`).
 - When one language is edited, the other is edited in the same commit.
@@ -216,7 +219,8 @@ Dosya düzeni: `content/posts/<slug>/index.en.md` + `index.tr.md` + `feature.*`.
 standart yer tutucular kullanılır; `scripts/scrub-check.sh` geçmeli. Gerçek lab adlarının listesi repoya girmez.
 
 **TR–EN eşliği:** iki dosya aynı bölümler, aynı komutlar, aynı işaretler ve aynı sayılarla; biri değişirse öteki aynı
-commit'te değişir.
+commit'te değişir. **Türkçe metin çeviri gibi değil, Türkçe yazılmış gibi okunmalı (D118, D119):** kelime kelime çeviri
+yok (ör. "uçuş kaydedicisi" değil "kara kutu"), TR başlıklar EN'den çevrilmez, Türkçe olarak yazılır.
 
 **Amaç önce (D53):** taslaktan önce yazının amacı tek cümle olarak `docs/decisions.md`'ye yazılır ve Emre onaylar; her review amacı oradan alır, yazıdan çıkarmaz.
 
