@@ -15,9 +15,10 @@ A post is ready for review only when every box is ticked, in **both** languages.
       tools on the admin machine). Mark each row ✅ or 📄.
 - [ ] **Architecture diagram** in Mermaid (`{{< mermaid >}}`), placed before the steps. Show the request path and
       the trust boundaries (identity, network). A diagram that only lists boxes is not enough: label the arrows.
-- [ ] **Steps**, numbered, each with a heading. Commands for the **admin machine** come in two tabs, `zsh` and
-      `PowerShell`, in **one tab group** (see §3), so one click switches the whole page. Commands that only exist on one
-      side (T-SQL, a script that runs on a Windows VM) appear once, without tabs.
+- [ ] **Steps**, numbered, each with a heading. **Every shell example is given twice** (D116, all posts): `zsh` and
+      `PowerShell`, as two tabs in **one tab group** (see §3), so one click switches the whole page. This holds for every
+      shell block, not only the steps; a PowerShell variant we did not run is marked 📄. Commands that only exist on one
+      side (T-SQL, a script that runs on a Windows server itself) appear once, without tabs.
 - [ ] **Verification**: how the reader proves each step worked, with the expected output.
 - [ ] **Troubleshooting**: a symptom → cause → fix table, at least for the failures we actually hit.
 - [ ] **Evidence markers** on every factual claim: ✅ = proven in our lab, 📄 = documented only (Learn, source code,
@@ -202,8 +203,9 @@ relayed by his assistant. The guide copies his voice only. The author profile is
 ## Türkçe özet
 
 Her yazıda olması gerekenler: **amaç ve hedef kitle**; **ön koşullar** tablosu; adımlardan önce **Mermaid mimari
-diyagramı** (okları etiketli); numaralı **adımlar**, admin makinesi komutları **tek bir sekme grubunda** `zsh` ve
-`PowerShell` olarak (bir tık bütün sayfayı değiştirir); her adım için **doğrulama**; **sorun giderme** tablosu
+diyagramı** (okları etiketli); numaralı **adımlar**; **her shell örneği iki kez verilir** (D116, bütün yazılar): **tek bir sekme
+grubunda** `zsh` ve `PowerShell` (bir tık bütün sayfayı değiştirir; bizim çalıştırmadığımız PowerShell karşılığı 📄;
+yalnızca bir tarafta olan komutlar, ör. Windows sunucunun kendisinde çalışanlar ya da T-SQL, bir kez); her adım için **doğrulama**; **sorun giderme** tablosu
 (belirti → neden → çözüm); her iddiada **✅ lab'de kanıtlandı / 📄 yalnız belgede** işareti; **"Ne öğrendik"** bölümü;
 sayfa paketinde 1200 × 630 **kapak görseli** (`feature.svg`/`.png`, dil bağımsız metin).
 
