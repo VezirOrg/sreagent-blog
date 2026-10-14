@@ -239,6 +239,8 @@ The job reads the endpoint from a variable instead of ARM, so the identity needs
 This started as a four-call bash snippet we ran by hand: read the agent endpoint from ARM, get a token for
 `https://azuresre.dev`, upload the files as multipart, check the indexer.
 
+{{< tabs group="shell" >}}
+{{< tab label="zsh" >}}
 ```bash
 SUB=<sub>   # RG and AGENT as in step 2
 ENDPOINT=$(az resource show \
@@ -249,9 +251,23 @@ curl -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TO
   -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
 curl "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
 ```
+{{< /tab >}}
+{{< tab label="PowerShell" >}}
+```powershell
+$SUB = "<sub>"   # RG and AGENT as in step 2
+$ENDPOINT = az resource show `
+  --ids "/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.App/agents/$AGENT" `
+  --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv
+$TOKEN = az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv
+curl.exe -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TOKEN" `
+  -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
+curl.exe "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 The paths follow the layout in step 1; our demo ran this snippet with the old subfolder paths
-(`payments/db-failover.md`, `network/dns-failover.md`).
+(`payments/db-failover.md`, `network/dns-failover.md`). We ran the zsh tab; the PowerShell tab was not run by us. 📄
 
 That is enough for one upload. It does not remove a runbook you deleted, and it does not stop two files with the same
 name from overwriting each other. `tools/sre_kb_sync.py` is the same four calls, extended:

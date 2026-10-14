@@ -242,6 +242,8 @@ Workflow endpoint'i ARM yerine variable'dan okuyor; bu yüzden kimliğin Reader 
 Betik, elle çalıştırdığımız dört çağrılık bir bash parçası olarak başladı: agent endpoint'ini ARM'den oku,
 `https://azuresre.dev` için token al, dosyaları multipart olarak yükle, indexer'ın durumuna bak.
 
+{{< tabs group="shell" >}}
+{{< tab label="zsh" >}}
 ```bash
 SUB=<sub>   # RG and AGENT as in step 2
 ENDPOINT=$(az resource show \
@@ -252,9 +254,24 @@ curl -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TO
   -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
 curl "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
 ```
+{{< /tab >}}
+{{< tab label="PowerShell" >}}
+```powershell
+$SUB = "<sub>"   # RG and AGENT as in step 2
+$ENDPOINT = az resource show `
+  --ids "/subscriptions/$SUB/resourceGroups/$RG/providers/Microsoft.App/agents/$AGENT" `
+  --api-version 2025-05-01-preview --query properties.agentEndpoint -o tsv
+$TOKEN = az account get-access-token --resource https://azuresre.dev --query accessToken -o tsv
+curl.exe -X POST "$ENDPOINT/api/v1/agentmemory/upload" -H "Authorization: Bearer $TOKEN" `
+  -F "files=@docs/runbooks/payments-db-failover.md" -F "files=@docs/runbooks/network-dns-failover.md"
+curl.exe "$ENDPOINT/api/v1/agentmemory/indexer-status" -H "Authorization: Bearer $TOKEN"
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 Yollar 1. adımdaki düzene uyuyor; demomuz bu snippet'i eski alt klasör yollarıyla çalıştırdı
-(`payments/db-failover.md`, `network/dns-failover.md`).
+(`payments/db-failover.md`, `network/dns-failover.md`). zsh sekmesini biz çalıştırdık; PowerShell sekmesini
+çalıştırmadık. 📄
 
 Tek bir yükleme için bu yeterli. Ama sildiğiniz bir runbook'u knowledge base'den kaldırmıyor ve aynı adlı iki dosyanın
 birbirinin üzerine yazmasını engellemiyor. `tools/sre_kb_sync.py` aynı dört çağrının genişletilmiş hâli:
