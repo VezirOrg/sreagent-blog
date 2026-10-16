@@ -75,7 +75,7 @@ bir görevi silse bile görev bir sonraki denetimde, yaklaşık 15 dakika içind
 
 Kara kutunun ayarları atamanın parametreleridir: kaydın nereye yükleneceği, en fazla ne kadar büyüyeceği (512 MB), ne
 sıklıkla örnek alınacağı (10 saniyede bir) ve ne sıklıkla dışa aktarılacağı. ✅ Lab'de saatte bir dışa aktardık;
-v1.0.1 sürümünde varsayılan 4 saatte birdir. ✅ 📄
+v1.0.2 sürümünden beri varsayılan da saatte birdir (önceden 4 saatte birdi). ✅ 📄
 
 Azure VM'lerde Machine Configuration için ek ücret ödenmez; Arc'a bağlı sunucularda sunucu başına ücret alınır. 📄
 

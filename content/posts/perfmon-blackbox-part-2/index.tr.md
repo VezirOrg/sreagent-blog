@@ -28,8 +28,8 @@ anlatıyor:
    getirdiğini açıklar.
 
 Buradaki her şey açık kaynak bir playbook'a dayanıyor:
-[VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox`](https://github.com/VezirOrg/sreagent-playbook/tree/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox),
-sürüm **[perfmon-blackbox/v1.0.1](https://github.com/VezirOrg/sreagent-playbook/releases/tag/perfmon-blackbox/v1.0.1)**.
+[VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox`](https://github.com/VezirOrg/sreagent-playbook/tree/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox),
+sürüm **[perfmon-blackbox/v1.0.2](https://github.com/VezirOrg/sreagent-playbook/releases/tag/perfmon-blackbox/v1.0.2)**.
 
 ✅ = lab'imizde doğrulandı · 📄 = yalnızca belgelere dayanıyor (Microsoft Learn, playbook'un dokümanları, Azure
 fiyatları), biz test etmedik · 🔎 = lab'imiz dışındaki bir kurulumda görüldü, biz yeniden denemedik.
@@ -63,7 +63,7 @@ Configuration'ı önceden bilmeniz gerekmiyor; gereken kısmı yazıda anlatıyo
 
 Akış şemasının tamamını [bölüm 1]({{< relref "/posts/perfmon-blackbox-part-1" >}}) adım adım anlatıyor; burada kısa bir özetini veriyoruz. Her sunucuda **dairesel,
 ikili bir PerfMon kaydı** (playbook'ta *ring*) sürekli çalışır: varsayılan olarak 512 MB ve 10 saniyede bir örnek. En
-yeni veri en eskisinin üzerine yazıldığı için disk dolmaz. 📄 Sunucu birkaç saatte bir (varsayılan 4 saat) son dışa
+yeni veri en eskisinin üzerine yazıldığı için disk dolmaz. 📄 Sunucu varsayılan olarak saatte bir, son dışa
 aktarımdan bu yana biriken her şeyi dışa aktarır: bir CSV ve her boşluğu adıyla yazan bir manifest, tek bir zip
 içinde. Zip'i **kendi managed identity'siyle**, özel bir depolama hesabındaki **kendi klasörüne** yükler. SRE Agent siz
 sorduğunuzda kaydı oradan okur. ✅ Kara kutuyu her sunucuya Azure Policy ve Machine Configuration yerleştirir ve orada
@@ -91,19 +91,19 @@ modu playbook bir Azure VM'de ve Arc'a bağlı bir sunucuda test etti (T20b ve T
 ## Adım adım kurulum
 
 Temel kaynak, sürümün kurulum rehberi:
-[v1.0.1'deki deploy.md](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/deploy.md).
+[v1.0.2'deki deploy.md](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/deploy.md).
 Burada rehberin tek abonelik için anlattığı yolu kısaltarak veriyoruz. Yer tutucular `<…>` içinde.
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
 ```bash
-git clone --branch perfmon-blackbox/v1.0.1 https://github.com/VezirOrg/sreagent-playbook.git
+git clone --branch perfmon-blackbox/v1.0.2 https://github.com/VezirOrg/sreagent-playbook.git
 cd sreagent-playbook/playbooks/perfmon-blackbox
 ```
 {{< /tab >}}
 {{< tab label="PowerShell" >}}
 ```powershell
-git clone --branch perfmon-blackbox/v1.0.1 https://github.com/VezirOrg/sreagent-playbook.git
+git clone --branch perfmon-blackbox/v1.0.2 https://github.com/VezirOrg/sreagent-playbook.git
 cd sreagent-playbook/playbooks/perfmon-blackbox
 ```
 {{< /tab >}}
@@ -186,14 +186,14 @@ Paketin URL'si ve SHA-256 değeri release notlarında yazar:
 
 | | |
 |---|---|
-| paket | `https://github.com/VezirOrg/sreagent-playbook/releases/download/perfmon-blackbox%2Fv1.0.1/PerfmonBlackbox.zip` |
+| paket | `https://github.com/VezirOrg/sreagent-playbook/releases/download/perfmon-blackbox%2Fv1.0.2/PerfmonBlackbox.zip` |
 | SHA-256 | `806BCADB69F556401DE19754AEB649B7611EB1AE18AA106A5BF0A537A99363DD` |
-| `--version` | `1.0.1` |
+| `--version` | `1.0.2` |
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
 ```bash
-python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 --out policy/out
+python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 --out policy/out
 p() { python3 -c 'import json,sys; v=json.load(open(sys.argv[1]))["properties"][sys.argv[2]]; print(v if isinstance(v,str) else json.dumps(v))' "$1" "$2"; }
 for kind in vm arc; do
   f=policy/out/perfmon-blackbox-$kind.json
@@ -204,7 +204,7 @@ done
 {{< /tab >}}
 {{< tab label="PowerShell" >}}
 ```powershell
-python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 --out policy/out
+python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 --out policy/out
 foreach ($kind in 'vm', 'arc') {
   $f = "policy/out/perfmon-blackbox-$kind.json"
   python -c "import json,sys; d=json.load(open(sys.argv[1]))['properties']; [json.dump(d[k],open(sys.argv[2]+'-'+k+'.json','w')) for k in ('policyRule','parameters','metadata')]" $f $kind
@@ -233,7 +233,7 @@ curl -sL -o PerfmonBlackbox.zip <package URL>
 shasum -a 256 PerfmonBlackbox.zip            # must equal the SHA-256 above
 # from a host inside the network, whose identity has Storage Blob Data Contributor on the packages container:
 az storage blob upload --auth-mode login --account-name <account> -c packages -n PerfmonBlackbox.zip -f PerfmonBlackbox.zip --overwrite
-python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 \
+python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 \
   --package-container-id <packageContainerResourceId> --out policy/out
 # then create perfmon-blackbox-vm-storage / -arc-storage as in step 2 (name = file name)
 ```
@@ -244,7 +244,7 @@ Invoke-WebRequest -Uri <package URL> -OutFile PerfmonBlackbox.zip
 (Get-FileHash PerfmonBlackbox.zip -Algorithm SHA256).Hash   # must equal the SHA-256 above
 # from a host inside the network, whose identity has Storage Blob Data Contributor on the packages container:
 az storage blob upload --auth-mode login --account-name <account> -c packages -n PerfmonBlackbox.zip -f PerfmonBlackbox.zip --overwrite
-python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 `
+python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 `
   --package-container-id <packageContainerResourceId> --out policy/out
 # then create perfmon-blackbox-vm-storage / -arc-storage as in step 2 (name = file name)
 ```
@@ -292,7 +292,7 @@ $mi = az policy assignment show -n pbb-vm --scope <scope> --query identity.princ
 Storage mode'da `--policy perfmon-blackbox-vm-storage` ve ayrı bir atama adı kullanılır (biz `pbb-vm-storage` ve
 `pbb-arc-storage` adlarını kullandık). Sayısal parametreler **string** olarak verilir: `{"ExportEveryHours":{"value":"1"}}`.
 JSON sayısı verirseniz `InvalidPolicyParameterType` hatası alırsınız. ✅ Bir saat içinde zip görebilmek için
-`ExportEveryHours`'u `"1"` yaptık; varsayılan değer 4.
+`ExportEveryHours`'u `"1"` yaptık; v1.0.2'den beri varsayılan da bu (önceden 4'tü).
 
 ![arc1'in policy atamasındaki parametreler: MaxSizeMB 512, SampleIntervalSeconds 10, ExportEveryHours 1, ContainerName perfmon, LocalKeepMB 1024, Effect DeployIfNotExists](img/assignment-parameters.png)
 
@@ -522,13 +522,13 @@ olmadan içerir
 ## Sınırlar
 
 - **Bu bir topluluk playbook'u, Microsoft ürünü değil.** Lab'imizde test ettik ([playbook'un
-  testleri](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/tests.md));
+  testleri](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/tests.md));
   üretim sunucularına atamadan önce kodu okuyun.
 - **Yalnızca Windows.** Tanımlar Windows Azure VM'lerini ve Windows çalışan Arc'a bağlı sunucuları hedefler. 📄
 - **Adlar tekil olmak zorunda.** İki custom rolün adı bütün Microsoft Entra tenant'ında, policy tanımlarının adları da
   abonelikte benzersiz olmalı. İkinci bir kurulum için farklı adlar gerekir (deploy.md, "Names"). 📄
 - **Kaldırma** adımları belgelenmiş (atamalar, rol atamaları, tanımlar, custom roller, depolama):
-  [operations.md, Remove](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/operations.md#remove). 📄
+  [operations.md, Remove](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/operations.md#remove). 📄
 
 ## Sorun giderme
 
@@ -545,8 +545,8 @@ olmadan içerir
 ## Sıfırdan kurulum ne kadar sürdü
 
 Playbook'un ikinci lab'inde kurulum, ürünü hiç bilmeyen birinin gözüyle yapıldı: yalnızca README ve deploy.md
-kullanıldı. Aşağıdakiler, v1.0.0'ın 2026-10-13'te iis1 üzerindeki bu kurulumunun süreleri. ✅ v1.0.1 aynı paketi
-kullanır (aynı SHA-256); yalnızca üretilen policy tanımları ve dokümanlar değişti. 📄
+kullanıldı. Aşağıdakiler, v1.0.0'ın 2026-10-13'te iis1 üzerindeki bu kurulumunun süreleri. ✅ v1.0.1 ve v1.0.2 aynı
+paketi kullanır (aynı SHA-256); yalnızca üretilen policy tanımları ve dokümanlar değişti. 📄
 
 | Adım | Geçen süre |
 |---|---|

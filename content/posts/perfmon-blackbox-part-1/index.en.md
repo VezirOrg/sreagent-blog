@@ -70,8 +70,8 @@ Configuration**, Azure's in-guest configuration service, take over. Every server
 someone deletes a task, it comes back at the next check, within about 15 minutes. 📄
 
 The assignment's parameters are the black box's settings: where to upload, how big the recording may grow (512 MB),
-how often to sample (every 10 seconds) and how often to export. ✅ We exported every hour in the lab; the default of
-release v1.0.1 is every 4 hours. ✅ 📄
+how often to sample (every 10 seconds) and how often to export. ✅ We exported every hour in the lab; since release
+v1.0.2 that is also the default (it was every 4 hours before). ✅ 📄
 
 On Azure VMs Machine Configuration has no extra charge; on Arc-enabled servers it is billed per server. 📄
 

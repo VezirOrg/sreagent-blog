@@ -26,8 +26,8 @@ the disk, and hands it over when someone asks. It has four parts, and they tell 
 4. **[Part 4]({{< relref "/posts/perfmon-blackbox-part-4" >}}): the agent investigates.** Azure SRE Agent reads a capture and explains what made the server hard to use.
 
 Everything here comes from a public playbook,
-[VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox`](https://github.com/VezirOrg/sreagent-playbook/tree/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox),
-at release **[perfmon-blackbox/v1.0.1](https://github.com/VezirOrg/sreagent-playbook/releases/tag/perfmon-blackbox/v1.0.1)**.
+[VezirOrg/sreagent-playbook, `playbooks/perfmon-blackbox`](https://github.com/VezirOrg/sreagent-playbook/tree/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox),
+at release **[perfmon-blackbox/v1.0.2](https://github.com/VezirOrg/sreagent-playbook/releases/tag/perfmon-blackbox/v1.0.2)**.
 
 ✅ = proven in our lab · 📄 = documented only (Microsoft Learn, the playbook's docs, Azure prices), not tested by us.
 🔎 = seen on an install outside our lab, not re-run by us.
@@ -60,7 +60,7 @@ Machine Configuration: the post explains the part you need.
 
 [Part 1]({{< relref "/posts/perfmon-blackbox-part-1" >}}) walks through the whole flow diagram; here is the short version. On every server a **circular binary
 PerfMon log** (the playbook calls it the *ring*) is always running: 512 MB and one sample every 10 seconds by default,
-and since the newest data overwrites the oldest, the disk cannot fill up. 📄 Every few hours (every 4 by default) the
+and since the newest data overwrites the oldest, the disk cannot fill up. 📄 Every hour by default, the
 server exports everything since its last export, a CSV and a manifest that names every gap, in one zip, and uploads it
 with **its own managed identity** into **its own folder** of a private storage account. The SRE Agent reads it from
 there when you ask. ✅ Azure Policy and Machine Configuration put the recorder on each server and keep it there; nothing
@@ -87,19 +87,19 @@ tested by the playbook on an Azure VM and on an Arc-enabled server (its tests T2
 ## Set it up, step by step
 
 The reference is the release's deployment guide,
-[deploy.md at v1.0.1](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/deploy.md).
+[deploy.md at v1.0.2](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/deploy.md).
 This is its path for one subscription, shortened. Placeholders are in `<…>`.
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
 ```bash
-git clone --branch perfmon-blackbox/v1.0.1 https://github.com/VezirOrg/sreagent-playbook.git
+git clone --branch perfmon-blackbox/v1.0.2 https://github.com/VezirOrg/sreagent-playbook.git
 cd sreagent-playbook/playbooks/perfmon-blackbox
 ```
 {{< /tab >}}
 {{< tab label="PowerShell" >}}
 ```powershell
-git clone --branch perfmon-blackbox/v1.0.1 https://github.com/VezirOrg/sreagent-playbook.git
+git clone --branch perfmon-blackbox/v1.0.2 https://github.com/VezirOrg/sreagent-playbook.git
 cd sreagent-playbook/playbooks/perfmon-blackbox
 ```
 {{< /tab >}}
@@ -184,14 +184,14 @@ The release notes give the package's URL and its SHA-256:
 
 | | |
 |---|---|
-| package | `https://github.com/VezirOrg/sreagent-playbook/releases/download/perfmon-blackbox%2Fv1.0.1/PerfmonBlackbox.zip` |
+| package | `https://github.com/VezirOrg/sreagent-playbook/releases/download/perfmon-blackbox%2Fv1.0.2/PerfmonBlackbox.zip` |
 | SHA-256 | `806BCADB69F556401DE19754AEB649B7611EB1AE18AA106A5BF0A537A99363DD` |
-| `--version` | `1.0.1` |
+| `--version` | `1.0.2` |
 
 {{< tabs group="shell" >}}
 {{< tab label="zsh" >}}
 ```bash
-python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 --out policy/out
+python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 --out policy/out
 p() { python3 -c 'import json,sys; v=json.load(open(sys.argv[1]))["properties"][sys.argv[2]]; print(v if isinstance(v,str) else json.dumps(v))' "$1" "$2"; }
 for kind in vm arc; do
   f=policy/out/perfmon-blackbox-$kind.json
@@ -202,7 +202,7 @@ done
 {{< /tab >}}
 {{< tab label="PowerShell" >}}
 ```powershell
-python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 --out policy/out
+python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 --out policy/out
 foreach ($kind in 'vm', 'arc') {
   $f = "policy/out/perfmon-blackbox-$kind.json"
   python -c "import json,sys; d=json.load(open(sys.argv[1]))['properties']; [json.dump(d[k],open(sys.argv[2]+'-'+k+'.json','w')) for k in ('policyRule','parameters','metadata')]" $f $kind
@@ -231,7 +231,7 @@ curl -sL -o PerfmonBlackbox.zip <package URL>
 shasum -a 256 PerfmonBlackbox.zip            # must equal the SHA-256 above
 # from a host inside the network, whose identity has Storage Blob Data Contributor on the packages container:
 az storage blob upload --auth-mode login --account-name <account> -c packages -n PerfmonBlackbox.zip -f PerfmonBlackbox.zip --overwrite
-python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 \
+python3 policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 \
   --package-container-id <packageContainerResourceId> --out policy/out
 # then create perfmon-blackbox-vm-storage / -arc-storage as in step 2 (name = file name)
 ```
@@ -242,7 +242,7 @@ Invoke-WebRequest -Uri <package URL> -OutFile PerfmonBlackbox.zip
 (Get-FileHash PerfmonBlackbox.zip -Algorithm SHA256).Hash   # must equal the SHA-256 above
 # from a host inside the network, whose identity has Storage Blob Data Contributor on the packages container:
 az storage blob upload --auth-mode login --account-name <account> -c packages -n PerfmonBlackbox.zip -f PerfmonBlackbox.zip --overwrite
-python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.1 `
+python policy/build_policies.py --content-uri <package URL> --content-hash <sha256> --version 1.0.2 `
   --package-container-id <packageContainerResourceId> --out policy/out
 # then create perfmon-blackbox-vm-storage / -arc-storage as in step 2 (name = file name)
 ```
@@ -288,7 +288,7 @@ $mi = az policy assignment show -n pbb-vm --scope <scope> --query identity.princ
 
 Storage mode uses `--policy perfmon-blackbox-vm-storage` and its own name (we used `pbb-vm-storage` and
 `pbb-arc-storage`). The numeric parameters are **strings**: `{"ExportEveryHours":{"value":"1"}}`. A JSON number fails
-with `InvalidPolicyParameterType`. ✅ We set `ExportEveryHours` to `"1"` to see a zip within the hour; the default is 4.
+with `InvalidPolicyParameterType`. ✅ We set `ExportEveryHours` to `"1"` to see a zip within the hour; since v1.0.2 that is the default (it was 4).
 
 ![The assignment's parameters on arc1's policy: MaxSizeMB 512, SampleIntervalSeconds 10, ExportEveryHours 1, ContainerName perfmon, LocalKeepMB 1024, Effect DeployIfNotExists](img/assignment-parameters.png)
 
@@ -510,13 +510,13 @@ Configuration charge dominates, unless your Arc servers are already covered: Win
 ## Limits
 
 - **This is a community playbook, not a Microsoft product.** It is tested in our lab ([the playbook's
-  tests](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/tests.md));
+  tests](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/tests.md));
   read the code before you assign it to production servers.
 - **Windows only.** The definitions target Windows Azure VMs and Windows Arc-enabled servers. 📄
 - **Names are not local.** The two custom role names are unique in the whole Microsoft Entra tenant, and the policy
   definition names in the subscription. A second deployment needs its own names (deploy.md, "Names"). 📄
 - **Removal** is a documented procedure (assignments, role assignments, definitions, custom roles, storage):
-  [operations.md, Remove](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.1/playbooks/perfmon-blackbox/docs/operations.md#remove). 📄
+  [operations.md, Remove](https://github.com/VezirOrg/sreagent-playbook/blob/perfmon-blackbox/v1.0.2/playbooks/perfmon-blackbox/docs/operations.md#remove). 📄
 
 ## Troubleshooting
 
@@ -533,8 +533,8 @@ Configuration charge dominates, unless your Arc servers are already covered: Win
 ## What a fresh install took
 
 The playbook's second lab was a *fresh-eyes* install: only the README and deploy.md, no prior knowledge. These are the
-timings of that install of v1.0.0 on 2026-10-13, on iis1. ✅ v1.0.1 ships the same package (same SHA-256); it changes
-the generated policy definitions and the docs. 📄
+timings of that install of v1.0.0 on 2026-10-13, on iis1. ✅ v1.0.1 and v1.0.2 ship the same package (same SHA-256);
+they change the generated policy definitions and the docs. 📄
 
 | Step | Wall time |
 |---|---|
