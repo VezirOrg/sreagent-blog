@@ -1,23 +1,34 @@
 # HANDOVER — sreagent-blog
 
-**Seven posts live: the four-part "black box" series went out on 2026-10-14, then an SEO pass; open: Part 2's v1.0.2
-update (waits for the release URL), giscus and GoatCounter switch-on (wait for Emre's guide steps), 9 long titles
-(Emre's call).**
+**Seven posts live. Part 2's v1.0.2 update is done and parked on branch `pending/v102-update`, waiting for Emre's
+YAYINLA; also open: giscus and GoatCounter switch-on (wait for Emre's guide steps), 9 long titles (Emre's call).**
 
 Blog and lab guides about Azure SRE Agent, MCP and Data API builder, by Emre Güçlü. Hugo + Blowfish, Turkish and
 English, https://sreagent.emreguclu.io. This repository is public (D18), history included: everything committed must
-pass the scrub rules in `docs/writing-guide.md` §4. **Every push to `main` goes live** (`.github/workflows/pages.yml`).
-Drafts, reviews, test logs, data and raw notes stay outside the repo, in the gitignored `files/` (a Google Drive
-folder). Read `CLAUDE.md` and `docs/decisions.md` (D1–D130) next.
+pass the scrub rules in `docs/writing-guide.md` §4. **Every push to `main` goes live** (`.github/workflows/pages.yml`,
+which runs only on pushes to `main`). Drafts, reviews, test logs, data and raw notes stay outside the repo, in the
+gitignored `files/` (a Google Drive folder). Read `CLAUDE.md` and `docs/decisions.md` next (D1–D130 on `main`; D131 is
+on the parked branch).
 
 ## Open items
 
-1. **Part 2 → v1.0.2 (D123, D127).** Part 2 was published targeting playbook release `perfmon-blackbox/v1.0.1`. When
-   the vezir sends the final v1.0.2 release URL, make one small commit to `content/posts/perfmon-blackbox-part-2/`
-   (EN and TR): release URL and tag, the `git clone` branch, the package URL, the SHA-256 if it changed, `--version`
-   output, the "v1.0.1" wording, and the default `ExportEveryHours` 4 → 1. Part 1 also says "the default of release
-   v1.0.1 is every 4 hours": update it in the same commit. Before the push: `scripts/scrub-check.sh`, local `hugo`
-   build, link check; after: check the live pages.
+1. **Part 2 → v1.0.2, parked (D123, D127, D131).** Playbook release `perfmon-blackbox/v1.0.2` came out on
+   2026-10-16 09:07 +03 (same zip, same SHA-256, default `ExportEveryHours` 1). Branch `pending/v102-update` (pushed;
+   publishes nothing) holds two commits on top of `5ded20f`: `a68d1b1` (decisions: D131, `[skip ci]`) and `77f0372`
+   (Part 2 EN+TR: release/tag link, clone branch, package URL, `--version 1.0.2`, playbook doc links, default every
+   hour; Part 1's default line EN+TR). Already checked on 2026-10-16: scrub clean, `hugo` build clean, every new link
+   HTTP 200, the zip's SHA-256 matches. Private preview: https://claude.ai/artifact/B74xTi5yD7nN6PqunPbjTL; full diff
+   `files/perfmon-blackbox-part-2-draft/v102-update-261016.diff`. **Waits for Emre's YAYINLA.** On approval:
+   `git rebase main pending/v102-update`, scrub + `hugo` build, fast-forward `main` to it and push `main`, check the
+   live Part 1 and Part 2 pages (EN and TR), then delete the branch (local and remote).
+   Left alone on purpose, recommendation **KALSIN** for all three (Emre may decide otherwise):
+   - Part 2 "One server in detail": "configuration version 1.0.1" and the screenshot's alt text (EN+TR); the lab ran
+     v1.0.1, so it is a measured fact (a "(our lab ran v1.0.1)" note is the alternative).
+   - Part 2 "All are fixed … at v1.0.1" and the table header "Fixed in v1.0.1" (EN+TR): historically right.
+   - Part 3 (EN l.23–24, l.274; TR l.24–25, l.284): tree link at v1.0.1, "at release v1.0.1", "v1.0.1 ships the v1.0.0
+     zip unchanged"; the post describes the v1.0.1 lab. Out of D131's scope; a separate small commit if Emre wants it.
+   No cost claim changes with v1.0.2 (the playbook's cost.md still has writes under 0.01 USD per server at 24 exports
+   a day; the lab already exported hourly).
 2. **giscus ON (D128) and GoatCounter code (D129)** wait for Emre's steps in the Turkish guide
    `files/blog-etkilesim-seo-rehberi.md` (giscus app install, optional "Comments" category, GoatCounter signup, Search
    Console, Bing). When his answers come through the owner:
@@ -106,7 +117,7 @@ Purposes: Part 1 D117, Part 2 D106, Part 3 D99 as edited (D126), Part 4 D114; ea
 
 ## Where things are
 
-- `docs/decisions.md` (D1–D130), `docs/writing-guide.md` (§1 checklist, §4 scrub, §5 TR/EN, §6 flow).
+- `docs/decisions.md` (D1–D130 on `main`, D131 on `pending/v102-update`), `docs/writing-guide.md` (§1 checklist, §4 scrub, §5 TR/EN, §6 flow).
 - `.claude/skills/tech-blog-review/SKILL.md` (Emre's review skill, verbatim, D40). `scripts/scrub-check.sh`.
 - Preview build: copy the tracked repo plus `themes/` to a scratch folder,
   `HUGO_RELATIVEURLS=true HUGO_UGLYURLS=true hugo --buildDrafts`, publish as a private claude.ai artifact.
@@ -120,8 +131,9 @@ Purposes: Part 1 D117, Part 2 D106, Part 3 D99 as edited (D126), Part 4 D114; ea
   re-check it on a theme upgrade.
 - Google Drive's file provider sometimes returns "Resource deadlock avoided"; work in the scratchpad and retry.
 
-## Last session (2026-10-14/15, on demand)
+## Last session (2026-10-16, on demand)
 
-Took the series from three to four parts (D113–D127), wrote the new Part 1, made every shell example zsh + PowerShell,
-did the Turkish pass, published all four parts EN + TR with the knowledge-in-git retrofit (a3f1d0e); then the SEO audit
-and fixes, giscus and GoatCounter wired off, and Emre's guide (D128–D130, ee094f7).
+Did the D127 update for v1.0.2 (D131), previewed it privately and reported it; Emre had not approved by the nightly
+recycle, so the two commits were parked on `pending/v102-update` and `main` was reset to `origin/main`. Nothing went live.
+Before that (2026-10-14/15): the four-part black box series was published (a3f1d0e), then the SEO pass with giscus and
+GoatCounter wired off (ee094f7).
